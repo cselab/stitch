@@ -8,6 +8,7 @@ import sys
 import stitch.glb as glb
 
 me = "stitch0.py"
+verbose = False
 dtype = np.dtype("<u2")
 #processes = multiprocessing.cpu_count()
 processes = 'serial'
@@ -64,7 +65,7 @@ st.align(layout.alignments,
          background=(100, 120),
          clip=25000,
          processes=processes,
-         verbose=True)
+         verbose=verbose)
 st.place(layout.alignments, layout.sources)
 stw.align_layout(layout.alignments,
                  max_shifts=[(-20 // sx, 20 // sx), (-20 // sy, 20 // sy),
@@ -72,7 +73,7 @@ stw.align_layout(layout.alignments,
                  prepare=True,
                  find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
                  processes=processes,
-                 verbose=True)
+                 verbose=verbose)
 stw.place(layout,
           min_quality=-np.inf,
           method='optimization',
@@ -87,13 +88,13 @@ stw.place(layout,
           fix_isolated=False,
           lower_to_origin=True,
           processes=processes,
-          verbose=True)
+          verbose=verbose)
 
 ux, uy, uz = layout.shape_wobbly()
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-stw.stitch(layout, processes, verbose=True)
+stw.stitch(layout, processes, verbose=verbose)
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))

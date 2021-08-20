@@ -78,30 +78,19 @@ def align_pair(src1, p1, src2, p2, axis, depth, max_shifts, clip, background, ve
     s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = padding0(mip1.shape[0], p2[0] - p1[0], mip1.shape[0], max_shifts[0][0], max_shifts[0][1])
 
     s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = padding0(mip2.shape[1], p2[1] - p1[1], mip2.shape[1], max_shifts[1][0], max_shifts[1][1])
-    if verbose:
-        sys.stderr.write('Rigid: %d: A\n' % os.getpid())
     np1 = np1x, np1y
     np2 = np2x, np2y
     max_shifts = np.array(max_shifts, dtype=int)
     i1 = mip1[s1lx:s1ux, s1ly:s1uy]
     i2 = mip2[s2lx:s2ux, s2ly:s2uy]
 
-    if verbose:
-        sys.stderr.write('Rigid: %d: B\n' % os.getpid())
     i1 = np.asarray(i1, dtype=float)
     i2 = np.asarray(i2, dtype=float)
-    if verbose:
-        sys.stderr.write('Rigid: %d: C\n' % os.getpid())
-
     i1[i1 > clip] = clip
     i2[i2 > clip] = clip
 
     i1 = np.pad(i1, (pad1x, pad1y), 'constant')
     i2 = np.pad(i2, (pad2x, pad2y), 'constant')
-
-    if verbose:
-        sys.stderr.write('Rigid: %d: D\n' % os.getpid())
-
     w1 = np.zeros(i1.shape)
     w1[np1] = 1
     w1fft = np.fft.fftn(w1)
@@ -116,18 +105,12 @@ def align_pair(src1, p1, src2, p2, axis, depth, max_shifts, clip, background, ve
     else:
         w2 = w1
         w2fft = w1fft
-
-    if verbose:
-        sys.stderr.write('Rigid: %d: E\n' % os.getpid())
     i1fft = np.fft.fftn(i1)
     i2fft = np.fft.fftn(i2)
     s1fft = np.fft.fftn(i1 * i1)
     s2fft = np.fft.fftn(i2 * i2)
     wssd = w1fft * np.conj(s2fft) + s1fft * np.conj(
         w2fft) - 2 * i1fft * np.conj(i2fft)
-    if verbose:
-        sys.stderr.write('Rigid: %d: F\n' % os.getpid())
-
     wssd = np.fft.ifftn(wssd)
     nrm = np.fft.ifftn(w1fft * np.conj(w2fft))
     wssd = wssd[roilx:roiux, roily:roiuy]
@@ -136,8 +119,6 @@ def align_pair(src1, p1, src2, p2, axis, depth, max_shifts, clip, background, ve
     nrm[nrm <= eps] = eps
     cc = np.abs(wssd / nrm)
     shift = np.argmin(cc)
-    if verbose:
-        sys.stderr.write('Rigid: %d: G\n' % os.getpid())
     shift = np.unravel_index(shift, cc.shape)
     quality = -(cc[tuple(shift)])
     shift_min = max_shifts[0][0], max_shifts[1][0]
