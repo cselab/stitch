@@ -1,5 +1,5 @@
-import Alignment.Rigid as strg
-import Alignment.Tracking as trk
+import stitch.Rigid as strg
+import stitch.Tracking as trk
 import functools as ft
 import itertools as itt
 import math
@@ -7,8 +7,8 @@ import multiprocessing as mp
 import numpy as np
 import skimage.feature as skif
 import sys
-import Alignment.glb as glb
-import Alignment.union_find as union_find
+import stitch.glb as glb
+import stitch.union_find as union_find
 import os
 
 

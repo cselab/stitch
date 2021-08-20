@@ -1,4 +1,4 @@
-import Alignment.union_find
+import stitch.union_find
 
 c = union_find.union_find(4)
 print(c.components())

@@ -1,4 +1,4 @@
-import Alignment.Wobbly
+import stitch.Wobbly
 import numpy as np
 
 

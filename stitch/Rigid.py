@@ -6,8 +6,8 @@ import multiprocessing as mp
 import numpy as np
 import os
 import sys
-import Alignment.glb as glb
-import Alignment.union_find
+import stitch.glb as glb
+import stitch.union_find
 
 
 class Layout1:

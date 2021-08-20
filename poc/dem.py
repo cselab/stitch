@@ -1,11 +1,11 @@
-import Alignment.Rigid as st
-import Alignment.Wobbly as stw
+import stitch.Rigid as st
+import stitch.Wobbly as stw
 import mmap
 import multiprocessing
 import numpy as np
 import os
 import sys
-import Alignment.glb as glb
+import stitch.glb as glb
 
 me = "dem.py"
 dtype = np.dtype("<u2")
