@@ -250,10 +250,8 @@ def align_wobbly_axis0(i, max_shifts, prepare, find_shifts, verbose):
         raise ValueError('The sources do not overlap!')
     n_slices = stop - start
     max_shifts = max_shifts[:2]
-    sl1 = glb.Region5(lower=p1[:2], shape=s1[:2])
-    sl2 = glb.Region5(lower=p2[:2], shape=s2[:2])
-    s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = strg.padding0(sl1.shape[0], sl2.position[0] - sl1.position[0], sl2.shape[0], max_shifts[0][0], max_shifts[0][1])
-    s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = strg.padding0(sl1.shape[1], sl2.position[1] - sl1.position[1], sl2.shape[1], max_shifts[1][0], max_shifts[1][1])
+    s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = strg.padding0(s1[0], p2[0] - p1[0], s2[0], max_shifts[0][0], max_shifts[0][1])
+    s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = strg.padding0(s1[1], p2[1] - p1[1], s2[1], max_shifts[1][0], max_shifts[1][1])
     np1 = np1x, np1y
     np2 = np2x, np2y
 

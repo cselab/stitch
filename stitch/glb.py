@@ -9,19 +9,6 @@ SINK = []
 ALIGNMENTS = []
 
 
-class Overlap0:
-    def __init__(self, lower, upper):
-        self.lower = lower
-        self.upper = upper
-
-
-class Region5:
-    def __init__(self, lower, shape):
-        self.position = lower
-        self.shape = shape
-        self.ndim = len(shape)
-
-
 def local_slicing0(position, lower, upper):
     return tuple(
         slice(l - p, u - p) for l, u, p in zip(lower, upper, position))
