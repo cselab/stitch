@@ -23,28 +23,19 @@ class Overlap1:
         self.sources = sources
         self.lower = tuple(lower)
         self.shape = shape
-        self.position = self.lower
         self.upper = tuple(p + s for p, s in zip(self.lower, self.shape))
-        self.ndim = len(self.lower)
-
 
 class Overlap2:
     def __init__(self, lower, upper):
-        lower = tuple(lower)
         self.shape = tuple(u - l for u, l in zip(upper, lower))
-        self.position = lower
-        self.lower = lower
+        self.lower = tuple(lower)
         self.upper = tuple(upper)
-        self.ndim = len(lower)
-
 
 class Overlap3:
     def __init__(self, lower, upper):
         self.shape = tuple(u - l for u, l in zip(upper, lower))
-        self.position = lower
         self.lower = lower
         self.upper = upper
-        self.ndim = len(lower)
 
 
 class WobblySource:

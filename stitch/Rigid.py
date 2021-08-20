@@ -235,7 +235,7 @@ def _split_region(r, o):
     split = [o]
     rl, ru = r.lower, r.upper
     ol, ou = o.lower, o.upper
-    for d in range(r.ndim):
+    for d in range(2):
         if rl[d] < ol[d]:
             l = ol[:d] + rl[d:]
             u = ou[:d] + (ol[d], ) + ru[d + 1:]
