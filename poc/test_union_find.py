@@ -1,4 +1,4 @@
-import union_find
+import Alignment.union_find
 
 c = union_find.union_find(4)
 print(c.components())

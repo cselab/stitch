@@ -7,14 +7,14 @@ import multiprocessing as mp
 import numpy as np
 import skimage.feature as skif
 import sys
-import tmp
-import union_find
+import Alignment.glb as glb
+import Alignment.union_find as union_find
 import os
 
 
 class Slice0:
     def __init__(self, source, coordinate, position):
-        shape = tmp.SRC[source].shape[0], tmp.SRC[source].shape[1]
+        shape = glb.SRC[source].shape[0], glb.SRC[source].shape[1]
         self.coordinate = coordinate
         self.shape = shape
         self.source = source
@@ -22,7 +22,7 @@ class Slice0:
         self.position = position
 
     def __getitem__(self, i):
-        return tmp.SRC[self.source].__getitem__((*i, self.coordinate))
+        return glb.SRC[self.source].__getitem__((*i, self.coordinate))
 
 
 class WobblyAlignment:
@@ -40,8 +40,8 @@ class WobblyAlignment:
     def __init__(self, pre, post):
         self.pre = pre
         self.post = post
-        ovl = min(pre.position[2] + tmp.SRC[pre.source].shape[2],
-                  post.position[2] + tmp.SRC[post.source].shape[2]) - max(
+        ovl = min(pre.position[2] + glb.SRC[pre.source].shape[2],
+                  post.position[2] + glb.SRC[post.source].shape[2]) - max(
                       pre.position[2], post.position[2])
         assert ovl >= 1
         d = (post.position[0] - pre.position[0],
@@ -56,8 +56,8 @@ class WobblyAlignment:
 
     @property
     def upper_coordinate(self):
-        return min(self.pre.position[2] + tmp.SRC[self.pre.source].shape[2],
-                   self.post.position[2] + tmp.SRC[self.post.source].shape[2])
+        return min(self.pre.position[2] + glb.SRC[self.pre.source].shape[2],
+                   self.post.position[2] + glb.SRC[self.post.source].shape[2])
 
     @property
     def shifts(self):
@@ -144,7 +144,7 @@ class WobblyLayout:
     def __init__(self, sources, pairs, tile_positions, positions):
         self.shape = None
         self.sources = tuple(
-            tmp.WobblySource(s, p, tile_position=t)
+            glb.WobblySource(s, p, tile_position=t)
             for s, p, t in zip(sources, positions, tile_positions))
         self.alignments = tuple(
             WobblyAlignment(pre=self.sources[i], post=self.sources[j])
@@ -218,12 +218,12 @@ def align_layout(alignments, max_shifts, prepare, find_shifts, verbose,
                         prepare=prepare,
                         find_shifts=find_shifts,
                         verbose=verbose)
-    tmp.ALIGNMENTS[:] = alignments
+    glb.ALIGNMENTS[:] = alignments
     if processes == 'serial':
-        results = [_align(i) for i in range(len(tmp.ALIGNMENTS))]
+        results = [_align(i) for i in range(len(glb.ALIGNMENTS))]
     else:
         with mp.Pool(processes) as e:
-            results = e.map(_align, range(len(tmp.ALIGNMENTS)))
+            results = e.map(_align, range(len(glb.ALIGNMENTS)))
     for a, r in zip(alignments, results):
         a.shifts = r[0]
         a.qualities = r[1]
@@ -234,12 +234,12 @@ def align_wobbly_axis0(i, max_shifts, prepare, find_shifts, verbose):
     if verbose:
         sys.stderr.write('Wobbly: start align_wobbly_axis0\n')
     find_shifts = dict(method=find_shifts)
-    source1 = tmp.ALIGNMENTS[i].pre
-    source2 = tmp.ALIGNMENTS[i].post
+    source1 = glb.ALIGNMENTS[i].pre
+    source2 = glb.ALIGNMENTS[i].post
     p1 = source1.position
     p2 = source2.position
-    s1 = tmp.SRC[source1.source].shape
-    s2 = tmp.SRC[source2.source].shape
+    s1 = glb.SRC[source1.source].shape
+    s2 = glb.SRC[source2.source].shape
 
     p1a = p1[2]
     p2a = p2[2]
@@ -250,16 +250,16 @@ def align_wobbly_axis0(i, max_shifts, prepare, find_shifts, verbose):
         raise ValueError('The sources do not overlap!')
     n_slices = stop - start
     max_shifts = max_shifts[:2]
-    sl1 = tmp.Region5(lower=p1[:2], shape=s1[:2])
-    sl2 = tmp.Region5(lower=p2[:2], shape=s2[:2])
+    sl1 = glb.Region5(lower=p1[:2], shape=s1[:2])
+    sl2 = glb.Region5(lower=p2[:2], shape=s2[:2])
     s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = strg.padding0(sl1.shape[0], sl2.position[0] - sl1.position[0], sl2.shape[0], max_shifts[0][0], max_shifts[0][1])
     s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = strg.padding0(sl1.shape[1], sl2.position[1] - sl1.position[1], sl2.shape[1], max_shifts[1][0], max_shifts[1][1])
     np1 = np1x, np1y
     np2 = np2x, np2y
 
     roi = (slice(roilx, roiux), slice(roily, roiuy))
-    i1 = tmp.SRC[source1.source][s1lx:s1ux, s1ly:s1uy, start - p1a:stop - p1a]
-    i2 = tmp.SRC[source2.source][s2lx:s2ux, s2ly:s2uy, start - p2a:stop - p2a]
+    i1 = glb.SRC[source1.source][s1lx:s1ux, s1ly:s1uy, start - p1a:stop - p1a]
+    i2 = glb.SRC[source2.source][s2lx:s2ux, s2ly:s2uy, start - p2a:stop - p2a]
     if prepare:
         b10, b11 = norm_coef(i1)
         b20, b21 = norm_coef(i2)
@@ -703,8 +703,8 @@ def _optimize_slice_positions(positions,
                 'Placement: done constructing constraints for component %d/%d\n'
                 % (cci, n_components))
         if isinstance(processes, int):
-            tmp.MM[:] = M
-            tmp.XX[:] = X
+            glb.MM[:] = M
+            glb.XX[:] = X
             with mp.Pool(min(processes, ndim)) as e:
                 shifts = e.map(_optimize_shifts, range(len(M)))
             shifts = np.array(shifts).T
@@ -728,7 +728,7 @@ def _optimize_slice_positions(positions,
 
 
 def _optimize_shifts(i):
-    ss = np.linalg.lstsq(-tmp.MM[i], tmp.XX[i], rcond=-1)[0]
+    ss = np.linalg.lstsq(-glb.MM[i], glb.XX[i], rcond=-1)[0]
     return np.asarray(np.round(ss), dtype=int)
 
 
@@ -857,5 +857,5 @@ def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
                                          position=position,
                                          regions=regions,
                                          stitched=stitched)
-    np.copyto(tmp.SINK[0][fxl:fxu, fyl:fyu, slice_id], stitched[sxl:sxu,
+    np.copyto(glb.SINK[0][fxl:fxu, fyl:fyu, slice_id], stitched[sxl:sxu,
                                                                 syl:syu], 'no')

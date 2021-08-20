@@ -5,7 +5,7 @@ import multiprocessing
 import numpy as np
 import os
 import sys
-import tmp
+import Alignment.glb as glb
 
 me = "dem.py"
 dtype = np.dtype("<u2")
@@ -33,9 +33,9 @@ path = (
     '1.2.HC_X0_Y-2500_640_nm_4x_Right_000005.raw',
     '1.2.HC_X0_Y0_640_nm_4x_Right_000002.raw',
 )
-tmp.SRC = tuple(np.memmap(os.path.join(di, e), dtype, 'r', 0, (nz, ny, nx), 'F')[::sx,::sy,::sz].copy()
+glb.SRC = tuple(np.memmap(os.path.join(di, e), dtype, 'r', 0, (nz, ny, nx), 'F')[::sx,::sy,::sz].copy()
             for e in path)
-kx, ky, kz = tmp.SRC[0].shape
+kx, ky, kz = glb.SRC[0].shape
 ox = 434 // sx
 oy = 425 // sy
 positions = []
@@ -50,7 +50,7 @@ for x in range(tx):
             pairs.append((i, (x + 1) * ty + y))
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
-layout = stw.WobblyLayout(tuple(range(len(tmp.SRC))),
+layout = stw.WobblyLayout(tuple(range(len(glb.SRC))),
                           pairs,
                           tile_positions=tile_positions,
                           positions=positions)
@@ -89,7 +89,7 @@ stw.place(layout,
 ux, uy, uz = layout.shape_wobbly()
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
-tmp.SINK[:] = [sink]
+glb.SINK[:] = [sink]
 stw.stitch(layout, processes, verbose=True)
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %

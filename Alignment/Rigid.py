@@ -6,8 +6,8 @@ import multiprocessing as mp
 import numpy as np
 import os
 import sys
-import tmp
-import union_find
+import Alignment.glb as glb
+import Alignment.union_find
 
 
 class Layout1:
@@ -61,18 +61,18 @@ def align_pair(src1, p1, src2, p2, axis, depth, max_shifts, clip, background, ve
         sys.stderr.write('Rigid: %d: start align_pair\n' %  os.getpid())
     depth = depth[axis]
     max_shifts = max_shifts[:axis] + max_shifts[axis + 1:]
-    s1 = tmp.SRC[src1].shape
-    s2 = tmp.SRC[src2].shape
+    s1 = glb.SRC[src1].shape
+    s2 = glb.SRC[src2].shape
     d1 = max(0, s1[axis] - depth)
     d2 = min(depth, s2[axis])
     if axis == 0:
-        mip1 = np.max(tmp.SRC[src1][d1:, :, :], axis=axis)
-        mip2 = np.max(tmp.SRC[src2][:d2, :, :], axis=axis)
+        mip1 = np.max(glb.SRC[src1][d1:, :, :], axis=axis)
+        mip2 = np.max(glb.SRC[src2][:d2, :, :], axis=axis)
         p1 = p1[1], p1[2]
         p2 = p2[1], p2[2]
     else:
-        mip1 = np.max(tmp.SRC[src1][:, d1:, :], axis=axis)
-        mip2 = np.max(tmp.SRC[src2][:, :d2, :], axis=axis)
+        mip1 = np.max(glb.SRC[src1][:, d1:, :], axis=axis)
+        mip2 = np.max(glb.SRC[src2][:, :d2, :], axis=axis)
         p1 = p1[0], p1[2]
         p2 = p2[0], p2[2]
     s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = padding0(mip1.shape[0], p2[0] - p1[0], mip1.shape[0], max_shifts[0][0], max_shifts[0][1])
@@ -200,7 +200,7 @@ def place(alignments, sources):
 def embedding(sources, shape, position):
     regions = []
     for s in sources:
-        region = tmp.Overlap1(lower=s.position, shape=s.shape, sources=(s, ))
+        region = glb.Overlap1(lower=s.position, shape=s.shape, sources=(s, ))
         regions = _add_overlap_region(regions, region)
     shape = tuple(max(s, 0) for s in shape)
     new_regions = []
@@ -228,7 +228,7 @@ def _overlap1(region1, region2):
     if np.any(ovu - ovl - 1 < 0):
         return None
     else:
-        return tmp.Overlap2(lower=ovl, upper=ovu)
+        return glb.Overlap2(lower=ovl, upper=ovu)
 
 
 def _split_region(r, o):
@@ -239,12 +239,12 @@ def _split_region(r, o):
         if rl[d] < ol[d]:
             l = ol[:d] + rl[d:]
             u = ou[:d] + (ol[d], ) + ru[d + 1:]
-            split.append(tmp.Overlap3(lower=l, upper=u))
+            split.append(glb.Overlap3(lower=l, upper=u))
 
         if ou[d] < ru[d]:
             l = ol[:d] + (ou[d], ) + rl[d + 1:]
             u = ou[:d] + ru[d:]
-            split.append(tmp.Overlap3(lower=l, upper=u))
+            split.append(glb.Overlap3(lower=l, upper=u))
     return split
 
 
@@ -298,11 +298,11 @@ def stitch_by_function_with_weights(sources, position, regions, stitched):
             wd = np.zeros((nsources, ) + r.shape)
             for i, s, sl in zip(
                     range(len(r.sources)), r.sources,
-                    tmp.source_slicings0(r.sources, r.lower, r.upper)):
+                    glb.source_slicings0(r.sources, r.lower, r.upper)):
                 rd[i] = s[sl]
                 wd[i] = w[sl]
             rd = np.average(rd, axis=0, weights=wd)
         else:
             s = r.sources[0]
-            rd = s[tmp.source_slicings0(r.sources, r.lower, r.upper)[0]]
-        stitched[tmp.local_slicing0(position, r.lower, r.upper)] = rd
+            rd = s[glb.source_slicings0(r.sources, r.lower, r.upper)[0]]
+        stitched[glb.local_slicing0(position, r.lower, r.upper)] = rd
