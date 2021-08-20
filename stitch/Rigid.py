@@ -10,15 +10,6 @@ import stitch.glb as glb
 import stitch.union_find
 
 
-class Layout1:
-    def __init__(self, sources):
-        self.sources = sources
-        self.lower = tuple(np.min([s.position for s in sources], axis=0))
-        self.upper = tuple(np.max([s.upper for s in sources], axis=0))
-        self.origin = tuple(p if p >= 0 else 0 for p in self.lower)
-        self.shape = tuple(u - o for u, o in zip(self.upper, self.origin))
-
-
 def padding0(s1, p2, s2, minx, maxx):
     o1l = max(0, p2 + minx)
     o1u = min(s1, p2 + s2 + maxx)
@@ -121,7 +112,6 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background, ver
     quality = -(cc[tuple(shift)])
     shift_min = max_shifts[0][0], max_shifts[1][0]
     shift = tuple(s + m for s, m in zip(shift, shift_min))
-    print(shift)
     if verbose:
         sys.stderr.write('Rigid: %d: shift = %r, quality = %.2e\n' % (os.getpid(), shift, quality))
     if axis == 0:

@@ -11,6 +11,14 @@ import stitch.glb as glb
 import stitch.union_find as union_find
 import os
 
+class Layout1:
+    def __init__(self, sources):
+        self.sources = sources
+        self.lower = tuple(np.min([s.position for s in sources], axis=0))
+        self.upper = tuple(np.max([s.upper for s in sources], axis=0))
+        self.origin = tuple(p if p >= 0 else 0 for p in self.lower)
+        self.shape = tuple(u - o for u, o in zip(self.upper, self.origin))
+
 
 class Slice0:
     def __init__(self, source, coordinate, position):
@@ -813,7 +821,7 @@ def stitch(layout, processes, verbose):
     for i, c in enumerate(coordinates):
         sources = slice_along_axis_wobbly(layout.sources, c)
         if sources:
-            layout_slices.append((i, strg.Layout1(sources=sources)))
+            layout_slices.append((i, Layout1(sources=sources)))
     if verbose:
         sys.stderr.write('Stitching: stitching %d sliced layouts\n' % len(coordinates))
     _stitch = ft.partial(_stitch_slice,
