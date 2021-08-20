@@ -13,10 +13,8 @@ def local_slicing0(position, lower, upper):
     return tuple(
         slice(l - p, u - p) for l, u, p in zip(lower, upper, position))
 
-
 def source_slicings0(sources, lower, upper):
     return [local_slicing0(s.position, lower, upper) for s in sources]
-
 
 class Overlap1:
     def __init__(self, lower, shape, sources):

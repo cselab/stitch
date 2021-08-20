@@ -304,5 +304,5 @@ def stitch_by_function_with_weights(sources, position, regions, stitched):
             rd = np.average(rd, axis=0, weights=wd)
         else:
             s = r.sources[0]
-            rd = s[glb.source_slicings0(r.sources, r.lower, r.upper)[0]]
+            rd = s[glb.local_slicing0(r.sources[0].position, r.lower, r.upper)]
         stitched[glb.local_slicing0(position, r.lower, r.upper)] = rd
