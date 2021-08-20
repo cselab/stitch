@@ -1,4 +1,3 @@
-import adv
 import ClearMap.Alignment.Stitching.StitchingRigid as st
 import ClearMap.Alignment.Stitching.StitchingWobbly as stw
 import mmap

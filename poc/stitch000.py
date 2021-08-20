@@ -1,4 +1,3 @@
-import adv
 import Alignment.Rigid as st
 import Alignment.Wobbly as stw
 import mmap
@@ -52,10 +51,7 @@ for x in range(tx):
             pairs.append((i, (x + 1) * ty + y))
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
-src = tuple(
-    adv.array((kx, ky, kz), dtype, os.path.join(di, p), 'r', order='F')
-    for p in path)
-#src = tuple(np.memmap(os.path.join(di, e), dtype, 'r', 0, (kx, ky, kz), order='F') for e in path)
+src = tuple(np.memmap(os.path.join(di, e), dtype, 'r', 0, (kx, ky, kz), order='F') for e in path)
 tmp.SRC[:] = src[:]
 layout = stw.WobblyLayout(tuple(range(len(tmp.SRC))),
                           pairs,
@@ -95,8 +91,7 @@ stw.place(layout,
 
 ux, uy, uz = layout.shape_wobbly()
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
-#sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
-sink = adv.create((ux, uy, uz), dtype, output, order='F')
+sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 tmp.SINK[:] = [sink]
 stw.stitch(layout, processes, verbose=True)
 sys.stderr.write(
