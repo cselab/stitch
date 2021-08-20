@@ -1,0 +1,15 @@
+tellsimpafter(su(a), n * m);
+tellsimpafter(su(a^2), l^2);
+tellsimpafter(su(1), n);
+matchdeclare(CC, constantp);
+tellsimpafter(su(CC), n * CC);
+declare(su, linear);
+declare([n, m, l], constant);
+assume(n > 0);
+
+b: a - m;
+c: b / sqrt(su(b * b));
+
+c: ev(c, infeval, expand, factor);
+
+

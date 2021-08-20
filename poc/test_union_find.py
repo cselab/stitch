@@ -1,0 +1,20 @@
+import union_find
+
+c = union_find.union_find(4)
+print(c.components())
+c.union(0, 1)
+print(c.components())
+c.union(0, 2)
+print(c.components())
+c.union(0, 3)
+print(c.components())
+
+print("####")
+c = union_find.union_find(4)
+print(c.components())
+c.union(0, 1)
+print(c.components())
+c.union(2, 3)
+print(c.components())
+c.union(0, 3)
+print(c.components())
