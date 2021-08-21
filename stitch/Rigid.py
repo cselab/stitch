@@ -122,8 +122,8 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
         return (shift[0], 0, shift[1]), quality
 
 
-def align(pairs, sources, alignments, depth, max_shifts, clip, background,
-          processes, verbose):
+def align(pairs, sources, depth, max_shifts, clip, background, processes,
+          verbose):
     f = ft.partial(align_pair,
                    depth=depth,
                    max_shifts=max_shifts,
@@ -144,18 +144,15 @@ def align(pairs, sources, alignments, depth, max_shifts, clip, background,
     else:
         with mp.Pool(processes) as e:
             results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
-    for a, (i, j), (shift, quality) in zip(alignments, pairs, results):
-        a.quality = quality
-        a.displacement = tuple(q + s - p for p, q, s in zip(
-            sources[i].position, sources[j].position, shift))
+    return results
 
 
-def place(pairs, sources, alignments):
-    n = 3 * len(alignments)
+def place(pairs, sources, displacement):
+    n = 3 * len(displacement)
     m = 3 * (len(sources) - 1)
     s = []
-    for a in alignments:
-        s.extend(a.displacement)
+    for d in displacement:
+        s.extend(d)
     M = np.zeros((n, m))
     k = 0
     for i, j in pairs:

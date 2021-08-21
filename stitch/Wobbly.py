@@ -1,15 +1,14 @@
-import stitch.Rigid as strg
-import stitch.Tracking as trk
 import functools as ft
-import itertools as itt
 import math
 import multiprocessing as mp
 import numpy as np
-import skimage.feature as skif
-import sys
-import stitch.glb as glb
-import stitch.union_find as union_find
 import os
+import skimage.feature as skif
+import stitch.glb as glb
+import stitch.Rigid as strg
+import stitch.Tracking as trk
+import stitch.union_find as union_find
+import sys
 
 
 class Layout1:
@@ -115,7 +114,7 @@ def ini(sources, pairs, tile_positions, positions):
     sources = tuple(
         glb.WobblySource(s, p, tile_position=t)
         for s, p, t in zip(sources, positions, tile_positions))
-    alignments = tuple(WobblyAlignment() for i, j in pairs)
+
     return alignments, sources
 
 

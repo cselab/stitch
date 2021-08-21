@@ -10,8 +10,8 @@ import stitch.glb as glb
 me = "stitch0.py"
 verbose = False
 dtype = np.dtype("<u2")
-processes = multiprocessing.cpu_count()
-#processes = 'serial'
+#processes = multiprocessing.cpu_count()
+processes = 'serial'
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 di = '/home/lisergey/stride8'
 tx, ty = 2, 2
@@ -57,21 +57,38 @@ src = tuple(
     np.memmap(os.path.join(di, e), dtype, 'r', 0, (kx, ky, kz), order='F')
     for e in path)
 glb.SRC[:] = src[:]
-alignments, sources = stw.ini(tuple(range(len(glb.SRC))),
-                              pairs,
-                              tile_positions=tile_positions,
-                              positions=positions)
-st.align(pairs,
-         sources,
-         alignments,
-         depth=[434 // sx, 425 // sy, None],
-         max_shifts=[(-80 // sx, 80 // sx), (-80 // sy, 80 // sy),
-                     (-120 // sz, 120 // sz)],
-         background=(100, 120),
-         clip=25000,
-         processes=processes,
-         verbose=verbose)
-st.place(pairs, sources, alignments)
+alignments = tuple(stw.WobblyAlignment() for p in pairs)
+sources = tuple(
+    glb.WobblySource(i, p, tile_position=t)
+    for i, (p, t) in enumerate(zip(positions, tile_positions)))
+results = st.align(pairs,
+                   sources,
+                   depth=[434 // sx, 425 // sy, None],
+                   max_shifts=[(-80 // sx, 80 // sx), (-80 // sy, 80 // sy),
+                               (-120 // sz, 120 // sz)],
+                   background=(100, 120),
+                   clip=25000,
+                   processes=processes,
+                   verbose=verbose)
+
+
+class A:
+    pass
+
+
+aa = A()
+qualities = []
+displacements = []
+for a, (i, j), (shift, quality) in zip(alignments, pairs, results):
+    qualities.append(quality)
+    displacements.append(
+        tuple(q + s - p for p, q, s in zip(sources[i].position,
+                                           sources[j].position, shift)))
+    aa.displacement = tuple(
+        q + s - p
+        for p, q, s in zip(sources[i].position, sources[j].position, shift))
+
+st.place(pairs, sources, displacements)
 stw.align(pairs,
           sources,
           alignments,
