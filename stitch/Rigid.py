@@ -168,6 +168,7 @@ def place(pairs, sources, displacement):
     pos -= np.min(pos, axis=0)
     for s, p in zip(sources, pos):
         s.position = tuple(p)
+    return [tuple(p) for p in pos]
 
 
 def embedding(sources, shape, position):
