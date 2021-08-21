@@ -364,11 +364,10 @@ def place(pairs, alignments, sources, min_quality, smooth, smooth_optimized,
     if verbose:
         sys.stderr.write('Placement: %d slices\n' % (n_slices))
     positions = np.array(
-        [s.position[:2] + s.position[2 + 1:] for s in sources])
+        [s.position[:2] for s in sources])
     alignment_pairs = np.array(pairs)
     n_alignments = len(alignment_pairs)
-    ndim = len(positions[0])
-    displacements = np.full((n_slices, n_alignments, ndim), np.nan)
+    displacements = np.full((n_slices, n_alignments, 2), np.nan)
     qualities = np.full((n_slices, n_alignments), -np.inf)
     status = np.full((n_slices, n_alignments), INVALID, dtype=int)
     for k, (a, (i, j)) in enumerate(zip(alignments, pairs)):
