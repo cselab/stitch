@@ -443,16 +443,6 @@ def _place_slice(displacements,
     alignment_pairs = alignment_pairs[valid]
     displacements = displacements[valid]
     qualities = qualities[valid]
-    component_ids, component_pairs, component_displacements = _connected_components(
-        positions, alignment_pairs, displacements)
-
-    for pairs, displ in zip(component_pairs, component_displacements):
-        _place_slice_component(positions, pairs, displ)
-
-    return positions, component_ids
-
-
-def _connected_components(positions, alignment_pairs, displacements):
     n_sources = len(positions)
     g = union_find.union_find(n_sources)
     for a in alignment_pairs:
@@ -469,7 +459,11 @@ def _connected_components(positions, alignment_pairs, displacements):
                 displ.append(d)
         component_pairs.append(pairs)
         component_displacements.append(displ)
-    return component_ids, component_pairs, component_displacements
+
+    for pairs, displ in zip(component_pairs, component_displacements):
+        _place_slice_component(positions, pairs, displ)
+
+    return positions, component_ids
 
 
 def _place_slice_component(positions,
