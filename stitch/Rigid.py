@@ -122,7 +122,8 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
         return (shift[0], 0, shift[1]), quality
 
 
-def align(pairs, sources, alignments, depth, max_shifts, clip, background, processes, verbose):
+def align(pairs, sources, alignments, depth, max_shifts, clip, background,
+          processes, verbose):
     f = ft.partial(align_pair,
                    depth=depth,
                    max_shifts=max_shifts,
@@ -131,7 +132,8 @@ def align(pairs, sources, alignments, depth, max_shifts, clip, background, proce
                    verbose=verbose)
 
     def a2arg(i, j):
-        axis = 1 if sources[i].tile_position[0] == sources[j].tile_position[0] else 0
+        axis = 1 if sources[i].tile_position[0] == sources[j].tile_position[
+            0] else 0
         shift = (sources[i].position[0] - sources[j].position[0],
                  sources[i].position[1] - sources[j].position[1],
                  sources[i].position[2] - sources[j].position[2])
@@ -144,9 +146,8 @@ def align(pairs, sources, alignments, depth, max_shifts, clip, background, proce
             results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
     for a, (i, j), (shift, quality) in zip(alignments, pairs, results):
         a.quality = quality
-        a.displacement = tuple(
-            q + s - p
-            for p, q, s in zip(sources[i].position, sources[j].position, shift))
+        a.displacement = tuple(q + s - p for p, q, s in zip(
+            sources[i].position, sources[j].position, shift))
 
 
 def place(pairs, sources, alignments):

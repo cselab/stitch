@@ -34,47 +34,25 @@ class Slice0:
         return glb.SRC[self.source].__getitem__((*i, self.coordinate))
 
 
+NOSIGNAL = -5
+NOMINIMA = -4
+UNALIGNED = -3
+UNTRACED = -2
+INVALID = -1
+VALID = 0
+MEASURED = 1
+ALIGNED = 2
+FIXED = 3
+
+
 class WobblyAlignment:
-
-    NOSIGNAL = -5
-    NOMINIMA = -4
-    UNALIGNED = -3
-    UNTRACED = -2
-    INVALID = -1
-    VALID = 0
-    MEASURED = 1
-    ALIGNED = 2
-    FIXED = 3
-
-    def __init__(self, pre, post):
-        self.pre = pre
-        self.post = post
-        ovl = min(pre.position[2] + glb.SRC[pre.source].shape[2],
-                  post.position[2] + glb.SRC[post.source].shape[2]) - max(
-                      pre.position[2], post.position[2])
-        assert ovl >= 1
-        d = (post.position[0] - pre.position[0],
-             post.position[1] - pre.position[1])
-        self.displacements = np.ones((ovl, 2), dtype=int) * d
-        self.qualities = np.ones(ovl) * (-np.inf)
-        self.status = np.full(ovl, self.VALID, dtype=int)
-
-    @property
-    def lower_coordinate(self):
-        return max(self.pre.position[2], self.post.position[2])
-
-    @property
-    def upper_coordinate(self):
-        return min(self.pre.position[2] + glb.SRC[self.pre.source].shape[2],
-                   self.post.position[2] + glb.SRC[self.post.source].shape[2])
-
     def set_shift(self, value, pre_pos, post_pos):
         pre_pos = pre_pos[:2] + pre_pos[2 + 1:]
         post_pos = post_pos[:2] + post_pos[2 + 1:]
         self.displacements = np.array(value) + post_pos - pre_pos
 
     def valids(self, min_quality=-np.inf):
-        valids = self.status >= self.VALID
+        valids = self.status >= VALID
         if min_quality:
             valids = np.logical_and(valids, self.qualities > min_quality)
         return valids
@@ -84,75 +62,74 @@ class WobblyAlignment:
             self.displacements, self.valids(min_quality=min_quality), **kwargs)
         return displacements
 
-    def fix_unaligned(self):
-        status = self.status
-        displacements = self.displacements
-        qualities = self.qualities
-        n_status = len(status)
-        unaligned = np.array(status == self.UNALIGNED, dtype=int)
-        unaligned = np.pad(unaligned, (1, 1), 'constant')
-        delta = np.diff(unaligned)
-        starts = np.where(delta > 0)[0]
-        ends = np.where(delta < 0)[0]
-        if len(starts) == 0:
-            return
-        if len(starts) == 1 and starts[0] == 0 and len(
-                ends) == 1 and ends[0] == n_status:
-            status[:] = self.INVALID
-            return
-        for s, e in zip(starts, ends):
-            if s > 0 and status[s - 1] >= self.VALID:
-                left = displacements[[s - 1]]
+
+def fix_unaligned(status, displacements, qualities):
+    n_status = len(status)
+    unaligned = np.array(status == UNALIGNED, dtype=int)
+    unaligned = np.pad(unaligned, (1, 1), 'constant')
+    delta = np.diff(unaligned)
+    starts = np.where(delta > 0)[0]
+    ends = np.where(delta < 0)[0]
+    if len(starts) == 0:
+        return
+    if len(starts) == 1 and starts[0] == 0 and len(
+            ends) == 1 and ends[0] == n_status:
+        status[:] = self.INVALID
+        return
+    for s, e in zip(starts, ends):
+        if s > 0 and status[s - 1] >= self.VALID:
+            left = displacements[[s - 1]]
+        else:
+            left = None
+        if e < n_status and status[e] >= self.VALID:
+            right = displacements[[e]]
+        else:
+            right = None
+        if left is None and right is None:
+            status[s:e] = self.INVALID
+        else:
+            if left is None:
+                displacements[s:e] = right
+                qualities[s:e] = qualities[e]
+            elif right is None:
+                displacements[s:e] = left
+                qualities[s:e] = qualities[s - 1]
             else:
-                left = None
-            if e < n_status and status[e] >= self.VALID:
-                right = displacements[[e]]
-            else:
-                right = None
-            if left is None and right is None:
-                status[s:e] = self.INVALID
-            else:
-                if left is None:
-                    displacements[s:e] = right
-                    qualities[s:e] = qualities[e]
-                elif right is None:
-                    displacements[s:e] = left
-                    qualities[s:e] = qualities[s - 1]
+                displacements[s:e] = np.array(
+                    np.round((right - left) * 1.0 / (e - s + 1) *
+                             np.arange(1, e - s + 1)[:, np.newaxis] + left),
+                    dtype=int)
+                qs = qualities[s - 1]
+                qe = qualities[e]
+                if np.isfinite(qs) and np.isfinite(qe):
+                    qualities[s:e] = (qe - qs) / (e - s + 1) * np.arange(
+                        1, e - s + 1) + qs
+                elif np.isfinite(qe):
+                    qualities[s:e] = qe
                 else:
-                    displacements[s:e] = np.array(
-                        np.round((right - left) * 1.0 / (e - s + 1) *
-                                 np.arange(1, e - s + 1)[:, np.newaxis] +
-                                 left),
-                        dtype=int)
-                    qs = qualities[s - 1]
-                    qe = qualities[e]
-                    if np.isfinite(qs) and np.isfinite(qe):
-                        qualities[s:e] = (qe - qs) / (e - s + 1) * np.arange(
-                            1, e - s + 1) + qs
-                    elif np.isfinite(qe):
-                        qualities[s:e] = qe
-                    else:
-                        qualities[s:e] = qs
-                status[s:e] = self.FIXED
+                    qualities[s:e] = qs
+            status[s:e] = FIXED
 
 
 def ini(sources, pairs, tile_positions, positions):
     sources = tuple(
         glb.WobblySource(s, p, tile_position=t)
         for s, p, t in zip(sources, positions, tile_positions))
-    alignments = tuple(
-        WobblyAlignment(pre=sources[i], post=sources[j])
-        for i, j in pairs)
+    alignments = tuple(WobblyAlignment() for i, j in pairs)
     return alignments, sources
+
 
 def lower_wobbly(sources):
     return tuple(np.min([s.lower_wobbly for s in sources], axis=0))
 
+
 def upper_wobbly(sources):
     return tuple(np.max([s.upper_wobbly for s in sources], axis=0))
 
+
 def origin_wobbly(sources):
     return tuple(min(p, 0) for p in lower_wobbly(sources))
+
 
 def shape_wobbly(sources):
     return tuple(
@@ -171,13 +148,14 @@ def slice_along_axis_wobbly(sources, coordinate):
     return sliced_sources
 
 
-def align(pairs, sources, alignments, max_shifts, prepare, find_shifts, verbose, processes):
+def align(pairs, sources, alignments, max_shifts, prepare, find_shifts,
+          verbose, processes):
     if verbose:
         sys.stderr.write('Wobbly: aligning %d pairs of wobbly sources\n' %
                          len(alignments))
 
     def a2arg(i, j):
-        return i, sources[i].position,  j, sources[j].position
+        return i, sources[i].position, j, sources[j].position
 
     f = ft.partial(align_pair,
                    max_shifts=max_shifts,
@@ -189,7 +167,8 @@ def align(pairs, sources, alignments, max_shifts, prepare, find_shifts, verbose,
     else:
         with mp.Pool(processes) as e:
             results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
-    for a, (i, j), (shift, qualities, status) in zip(alignments, pairs, results):
+    for a, (i, j), (shift, qualities, status) in zip(alignments, pairs,
+                                                     results):
         a.set_shift(shift, sources[i].position, sources[j].position)
         a.qualities = qualities
         a.status = status
@@ -222,7 +201,7 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
     if prepare:
         b10, b11 = norm_coef(i1)
         b20, b21 = norm_coef(i2)
-    status = WobblyAlignment.INVALID * np.ones(n_slices, dtype=int)
+    status = INVALID * np.ones(n_slices, dtype=int)
     errors = np.zeros((n_slices, roiux if roilx is None else -roilx,
                        roiuy if roily is None else -roily))
     sx = s1ux - s1lx + pad1x[0] + pad1x[1]
@@ -257,7 +236,7 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
         wssd = np.fft.ifftn(wssd)
         wssd = wssd[roilx:roiux, roily:roiuy]
         errors[i] = np.abs(wssd / nrm)
-        status[i] = WobblyAlignment.MEASURED
+        status[i] = MEASURED
     shifts, qualities, status = shifts_from_tracing(errors, status,
                                                     **find_shifts)
     for i in range(n_slices):
@@ -303,16 +282,16 @@ def shifts_from_tracing(errors,
     n = len(status)
     qualities = -np.inf * np.ones(n)
     shifts = np.zeros((n, errors.ndim - 1), dtype=int)
-    measured = np.where(status == WobblyAlignment.MEASURED)[0]
+    measured = np.where(status == MEASURED)[0]
     if len(measured) == 0:
         return shifts, qualities, status
     mins = [detect_local_minima(error) for error in errors[measured]]
     for i, m in zip(measured, mins):
         if len(m[1]) == 1 and not np.isfinite(m[1][0]):
-            status[i] = WobblyAlignment.NOMINIMA
+            status[i] = NOMINIMA
     mins = [m for m in mins if np.isfinite(m[1][0])]
-    measured = status == WobblyAlignment.MEASURED
-    valids = np.logical_or(measured, status == WobblyAlignment.UNALIGNED)
+    measured = status == MEASURED
+    valids = np.logical_or(measured, status == UNALIGNED)
     valids = np.array(valids, dtype=int)
     valids = np.asarray(np.pad(valids, (1, 1), 'constant'))
     starts = np.where(np.diff(valids) > 0)[0]
@@ -364,19 +343,21 @@ def shifts_from_tracing(errors,
             if len(trajectories) == 0:
                 break
         measured_se += s
-        status[measured_se] = WobblyAlignment.UNTRACED
+        status[measured_se] = UNTRACED
         for t in t_opt:
             for p in t:
                 l, m = p
                 i = measured_se[l]
                 shifts[i] = positions[l][m]
                 qualities[i] = -errors[i][tuple(shifts[i])]
-                status[i] = WobblyAlignment.ALIGNED
+                status[i] = ALIGNED
 
     return shifts, qualities, status
 
 
-def place(pairs, alignments, sources,
+def place(pairs,
+          alignments,
+          sources,
           min_quality=None,
           smooth=None,
           smooth_optimized=None,
@@ -388,7 +369,7 @@ def place(pairs, alignments, sources,
     ]
 
     lo = min(s.position[2] for s in sources)
-    hi  = max(s.position[2] + glb.SRC[s.source].shape[2] for s in sources)
+    hi = max(s.position[2] + glb.SRC[s.source].shape[2] for s in sources)
     n_slices = hi - lo
     if verbose:
         sys.stderr.write('Placement: placing positions in %d slices\n' %
@@ -400,21 +381,20 @@ def place(pairs, alignments, sources,
     ndim = len(positions[0])
     displacements = np.full((n_slices, n_alignments, ndim), np.nan)
     qualities = np.full((n_slices, n_alignments), -np.inf)
-    status = np.full((n_slices, n_alignments),
-                     WobblyAlignment.INVALID,
-                     dtype=int)
-    for i, a in enumerate(alignments):
-        a.fix_unaligned()
-        l = a.lower_coordinate
-        u = a.upper_coordinate
+    status = np.full((n_slices, n_alignments), INVALID, dtype=int)
+    for k, (a, (i, j)) in enumerate(zip(alignments, pairs)):
+        fix_unaligned(a.status, a.displacements, a.qualities)
+        l = max(sources[i].position[2], sources[j].position[2])
+        u = min(sources[i].position[2] + glb.SRC[sources[i].source].shape[2],
+                sources[j].position[2] + glb.SRC[sources[j].source].shape[2])
         if smooth:
             displacements[l:u,
-                          i] = a.smooth_displacements(min_quality=min_quality,
+                          k] = a.smooth_displacements(min_quality=min_quality,
                                                       **smooth)
         else:
-            displacements[l:u, i] = a.displacements
-        qualities[l:u, i] = a.qualities
-        status[l:u, i] = a.status
+            displacements[l:u, k] = a.displacements
+        qualities[l:u, k] = a.qualities
+        status[l:u, k] = a.status
     _place = ft.partial(_place_slice,
                         positions=positions,
                         alignment_pairs=alignment_pairs,
@@ -460,7 +440,7 @@ def _place_slice(displacements,
                  min_quality=-np.inf):
 
     positions = positions.copy()
-    valid = status >= WobblyAlignment.VALID
+    valid = status >= VALID
     if min_quality:
         valid = np.logical_and(valid, qualities > min_quality)
 
@@ -759,11 +739,11 @@ def stitch(sources, processes, verbose):
         sys.stderr.write('Stitching: stitching %d sliced layouts\n' %
                          len(coordinates))
     f = ft.partial(_stitch_slice,
-                         ox=origin[0],
-                         oy=origin[1],
-                         sx=shape[0],
-                         sy=shape[1],
-                         verbose=verbose)
+                   ox=origin[0],
+                   oy=origin[1],
+                   sx=shape[0],
+                   sy=shape[1],
+                   verbose=verbose)
     if processes == 'serial':
         for i, l in layout_slices:
             f(i, l)
