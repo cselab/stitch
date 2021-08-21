@@ -142,14 +142,14 @@ def slice_along_axis_wobbly(sources, coordinate):
     return sliced_sources
 
 
-def align(pairs, sources, alignments, max_shifts, prepare, find_shifts,
+def align(pairs, positions, alignments, max_shifts, prepare, find_shifts,
           verbose, processes):
     if verbose:
         sys.stderr.write('Wobbly: aligning %d pairs of wobbly sources\n' %
                          len(alignments))
 
     def a2arg(i, j):
-        return i, sources[i].position, j, sources[j].position
+        return i, positions[i], j, positions[j]
 
     f = ft.partial(align_pair,
                    max_shifts=max_shifts,
@@ -164,9 +164,10 @@ def align(pairs, sources, alignments, max_shifts, prepare, find_shifts,
     for a, (i, j), (shift, qualities, status) in zip(alignments, pairs,
                                                      results):
         a.displacements = np.array(
-            shift) + sources[j].position[:2] - sources[i].position[:2]
+            shift) + positions[j][:2] - positions[i][:2]
         a.qualities = qualities
         a.status = status
+    return zip(*results)
 
 
 def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,

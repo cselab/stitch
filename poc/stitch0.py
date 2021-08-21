@@ -78,8 +78,8 @@ for (i, j), shift, in zip(pairs, shifts):
                                            positions[j], shift)))
 
 positions = st.place(pairs, sources, displacements)
-stw.align(pairs,
-          sources,
+displacements, qualities, status = stw.align(pairs,
+          positions,
           alignments,
           max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
           prepare=True,
