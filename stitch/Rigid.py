@@ -122,7 +122,7 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
         return (shift[0], 0, shift[1]), quality
 
 
-def align(pairs, sources, depth, max_shifts, clip, background, processes,
+def align(pairs, positions, tile_position, depth, max_shifts, clip, background, processes,
           verbose):
     f = ft.partial(align_pair,
                    depth=depth,
@@ -132,11 +132,10 @@ def align(pairs, sources, depth, max_shifts, clip, background, processes,
                    verbose=verbose)
 
     def a2arg(i, j):
-        axis = 1 if sources[i].tile_position[0] == sources[j].tile_position[
-            0] else 0
-        shift = (sources[i].position[0] - sources[j].position[0],
-                 sources[i].position[1] - sources[j].position[1],
-                 sources[i].position[2] - sources[j].position[2])
+        axis = 1 if tile_position[i][0] == tile_position[j][0] else 0
+        shift = (positions[i][0] - positions[j][0],
+                 positions[i][1] - positions[j][1],
+                 positions[i][2] - positions[j][2])
         return i, j, shift, axis
 
     if processes == 'serial':

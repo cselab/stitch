@@ -61,7 +61,8 @@ sources = tuple(
     glb.WobblySource(i, p, tile_position=t)
     for i, (p, t) in enumerate(zip(positions, tile_positions)))
 results = st.align(pairs,
-                   sources,
+                   positions,
+                   tile_positions,
                    depth=[434 // sx, 425 // sy, None],
                    max_shifts=[(-80 // sx, 80 // sx), (-80 // sy, 80 // sy),
                                (-120 // sz, 120 // sz)],
