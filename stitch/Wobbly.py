@@ -68,20 +68,7 @@ class WobblyAlignment:
         return min(self.pre.position[2] + glb.SRC[self.pre.source].shape[2],
                    self.post.position[2] + glb.SRC[self.post.source].shape[2])
 
-    @property
-    def shifts(self):
-        displacements = self.displacements
-        pre_pos = self.pre.position
-        post_pos = self.post.position
-        pre_pos = pre_pos[:2] + pre_pos[2 + 1:]
-        post_pos = post_pos[:2] + post_pos[2 + 1:]
-        shifts = displacements - post_pos + pre_pos
-        return shifts
-
-    @shifts.setter
-    def shifts(self, value):
-        pre_pos = self.pre.position
-        post_pos = self.post.position
+    def set_shift(self, value, pre_pos, post_pos):
         pre_pos = pre_pos[:2] + pre_pos[2 + 1:]
         post_pos = post_pos[:2] + post_pos[2 + 1:]
         self.displacements = np.array(value) + post_pos - pre_pos
@@ -184,13 +171,13 @@ def slice_along_axis_wobbly(sources, coordinate):
     return sliced_sources
 
 
-def align(alignments, max_shifts, prepare, find_shifts, verbose, processes):
+def align(pairs, sources, alignments, max_shifts, prepare, find_shifts, verbose, processes):
     if verbose:
         sys.stderr.write('Wobbly: aligning %d pairs of wobbly sources\n' %
                          len(alignments))
 
-    def a2arg(a):
-        return a.pre.source, a.pre.position, a.post.source, a.post.position
+    def a2arg(i, j):
+        return i, sources[i].position,  j, sources[j].position
 
     f = ft.partial(align_pair,
                    max_shifts=max_shifts,
@@ -198,12 +185,14 @@ def align(alignments, max_shifts, prepare, find_shifts, verbose, processes):
                    find_shifts=find_shifts,
                    verbose=verbose)
     if processes == 'serial':
-        results = [f(*a2arg(a)) for a in alignments]
+        results = [f(*a2arg(i, j)) for i, j in pairs]
     else:
         with mp.Pool(processes) as e:
-            results = e.starmap(f, (a2arg(a) for a in alignments))
-    for a, r in zip(alignments, results):
-        a.shifts, a.qualities, a.status = r
+            results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
+    for a, (i, j), (shift, qualities, status) in zip(alignments, pairs, results):
+        a.set_shift(shift, sources[i].position, sources[j].position)
+        a.qualities = qualities
+        a.status = status
 
 
 def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
@@ -387,7 +376,7 @@ def shifts_from_tracing(errors,
     return shifts, qualities, status
 
 
-def place(alignments, sources,
+def place(pairs, alignments, sources,
           min_quality=None,
           smooth=None,
           smooth_optimized=None,
@@ -404,12 +393,9 @@ def place(alignments, sources,
     if verbose:
         sys.stderr.write('Placement: placing positions in %d slices\n' %
                          (n_slices))
-    source_to_index = {s: i for i, s in enumerate(sources)}
     positions = np.array(
         [s.position[:2] + s.position[2 + 1:] for s in sources])
-    alignment_pairs = np.array([
-        (source_to_index[a.pre], source_to_index[a.post]) for a in alignments
-    ])
+    alignment_pairs = np.array(pairs)
     n_alignments = len(alignment_pairs)
     ndim = len(positions[0])
     displacements = np.full((n_slices, n_alignments, ndim), np.nan)

@@ -122,7 +122,7 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
         return (shift[0], 0, shift[1]), quality
 
 
-def align(alignments, depth, max_shifts, clip, background, processes, verbose):
+def align(pairs, sources, alignments, depth, max_shifts, clip, background, processes, verbose):
     f = ft.partial(align_pair,
                    depth=depth,
                    max_shifts=max_shifts,
@@ -130,26 +130,26 @@ def align(alignments, depth, max_shifts, clip, background, processes, verbose):
                    background=background,
                    verbose=verbose)
 
-    def a2arg(a):
-        axis = 1 if a.pre.tile_position[0] == a.post.tile_position[0] else 0
-        shift = (a.pre.position[0] - a.post.position[0],
-                 a.pre.position[1] - a.post.position[1],
-                 a.pre.position[2] - a.post.position[2])
-        return a.pre.source, a.post.source, shift, axis
+    def a2arg(i, j):
+        axis = 1 if sources[i].tile_position[0] == sources[j].tile_position[0] else 0
+        shift = (sources[i].position[0] - sources[j].position[0],
+                 sources[i].position[1] - sources[j].position[1],
+                 sources[i].position[2] - sources[j].position[2])
+        return i, j, shift, axis
 
     if processes == 'serial':
-        results = [f(*a2arg(a)) for a in alignments]
+        results = [f(*a2arg(i, j)) for i, j in pairs]
     else:
         with mp.Pool(processes) as e:
-            results = e.starmap(f, (a2arg(a) for a in alignments))
-    for a, (shift, quality) in zip(alignments, results):
+            results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
+    for a, (i, j), (shift, quality) in zip(alignments, pairs, results):
         a.quality = quality
         a.displacement = tuple(
             q + s - p
-            for p, q, s in zip(a.pre.position, a.post.position, shift))
+            for p, q, s in zip(sources[i].position, sources[j].position, shift))
 
 
-def place(alignments, sources):
+def place(pairs, sources, alignments):
     n = 3 * len(alignments)
     m = 3 * (len(sources) - 1)
     s = []
@@ -157,9 +157,7 @@ def place(alignments, sources):
         s.extend(a.displacement)
     M = np.zeros((n, m))
     k = 0
-    for a in alignments:
-        i = a.pre.source
-        j = a.post.source
+    for i, j in pairs:
         for d in range(3):
             if i > 0:
                 M[k, (i - 1) * 3 + d] = -1

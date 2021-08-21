@@ -61,7 +61,7 @@ alignments, sources = stw.ini(tuple(range(len(glb.SRC))),
                               pairs,
                               tile_positions=tile_positions,
                               positions=positions)
-st.align(alignments,
+st.align(pairs, sources, alignments,
          depth=[434 // sx, 425 // sy, None],
          max_shifts=[(-80 // sx, 80 // sx), (-80 // sy, 80 // sy),
                      (-120 // sz, 120 // sz)],
@@ -69,14 +69,14 @@ st.align(alignments,
          clip=25000,
          processes=processes,
          verbose=verbose)
-st.place(alignments, sources)
-stw.align(alignments,
+st.place(pairs, sources, alignments)
+stw.align(pairs, sources, alignments,
           max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
           prepare=True,
           find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
           processes=processes,
           verbose=verbose)
-stw.place(alignments, sources,
+stw.place(pairs, alignments, sources,
           min_quality=-np.inf,
           smooth=dict(method='window',
                       window='hamming',
