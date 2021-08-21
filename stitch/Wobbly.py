@@ -467,14 +467,13 @@ def _place_slice(displacements,
 
 
 def _place_slice_component(positions,
-                           alignment_pairs,
-                           displacements,
-                           fixed=None):
-    nalignments = len(alignment_pairs)
+                           pairs,
+                           displacements):
+    nalignments = len(pairs)
     if nalignments == 0:
         return positions
-    pre_indices = np.unique([p[0] for p in alignment_pairs])
-    post_indices = np.unique([p[1] for p in alignment_pairs])
+    pre_indices = np.unique([p[0] for p in pairs])
+    post_indices = np.unique([p[1] for p in pairs])
     node_to_index = np.unique(np.hstack([pre_indices, post_indices]))
     index_to_node = {i: n for n, i in enumerate(node_to_index)}
     nnodes = len(node_to_index)
@@ -484,13 +483,13 @@ def _place_slice_component(positions,
     m = ndim * (nnodes - 1)
     s = np.zeros(n)
     k = 0
-    for a, sh in zip(alignment_pairs, displacements):
+    for a, sh in zip(pairs, displacements):
         for d in range(ndim):
             s[k] = sh[d]
             k = k + 1
     M = np.zeros((n, m))
     k = 0
-    for a in alignment_pairs:
+    for a in pairs:
         pre_node = index_to_node[a[0]]
         post_node = index_to_node[a[1]]
         for d in range(ndim):
@@ -503,10 +502,7 @@ def _place_slice_component(positions,
     positions_optimized = np.hstack([np.zeros(ndim), positions_optimized])
     positions_optimized = np.reshape(positions_optimized, (-1, ndim))
     positions_optimized = np.asarray(np.round(positions_optimized), dtype=int)
-    if fixed is not None:
-        fixed_id = fixed
-    else:
-        fixed_id = np.min(alignment_pairs)
+    fixed_id = np.min(pairs)
     fixed_position = positions[fixed_id]
     positions_optimized = positions_optimized - positions_optimized[
         index_to_node[fixed_id]] + fixed_position
