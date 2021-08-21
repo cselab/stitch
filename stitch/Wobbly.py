@@ -355,7 +355,7 @@ def place(pairs,
     hi = max(s.position[2] + glb.SRC[s.source].shape[2] for s in sources)
     n_slices = hi - lo
     if verbose:
-        sys.stderr.write('Placement: placing positions in %d slices\n' %
+        sys.stderr.write('Placement: %d slices\n' %
                          (n_slices))
     positions = np.array(
         [s.position[:2] + s.position[2 + 1:] for s in sources])
@@ -371,10 +371,10 @@ def place(pairs,
         u = min(sources[i].position[2] + glb.SRC[sources[i].source].shape[2],
                 sources[j].position[2] + glb.SRC[sources[j].source].shape[2])
         if smooth:
-            valids = status >= VALID
+            valids = a.status >= VALID
             if min_quality:
-                valids = np.logical_and(valids, qualities > min_quality)
-            displacements[l:u,k] = smooth_displacements(displacements, valids, **smooth)
+                valids = np.logical_and(valids, a.qualities > min_quality)
+            displacements[l:u,k] = smooth_displacements(a.displacements, valids, **smooth)
         else:
             displacements[l:u, k] = a.displacements
         qualities[l:u, k] = a.qualities
