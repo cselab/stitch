@@ -43,17 +43,6 @@ MEASURED = 1
 ALIGNED = 2
 FIXED = 3
 
-def valids(status, qualities, min_quality):
-    valids = status >= VALID
-    if min_quality:
-        valids = np.logical_and(valids, qualities > min_quality)
-    return valids
-
-def smooth_displacements0(status, qualities, displacements, min_quality=-np.inf, **kwargs):
-    displacements = smooth_displacements(
-        displacements, valids(status, qualities, min_quality=min_quality), **kwargs)
-    return displacements
-
 class WobblyAlignment:
     pass
 
@@ -382,11 +371,10 @@ def place(pairs,
         u = min(sources[i].position[2] + glb.SRC[sources[i].source].shape[2],
                 sources[j].position[2] + glb.SRC[sources[j].source].shape[2])
         if smooth:
-            displacements[l:u,
-                          k] = smooth_displacements0(
-                              a.status, a.qualities, a.displacements,
-                              min_quality=min_quality,
-                              **smooth)
+            valids = status >= VALID
+            if min_quality:
+                valids = np.logical_and(valids, qualities > min_quality)
+            displacements[l:u,k] = smooth_displacements(displacements, valids, **smooth)
         else:
             displacements[l:u, k] = a.displacements
         qualities[l:u, k] = a.qualities
