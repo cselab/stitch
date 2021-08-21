@@ -52,60 +52,18 @@ class WobblySource:
         self._wobble = np.zeros((shape[2], 2), dtype=int)
         self.status = np.full(shape[2], self.VALID, dtype=int)
 
-    @property
     def upper(self):
         return tuple(p + s
                      for p, s in zip(self.position, SRC[self.source].shape))
 
-    def wobble_from_positions(self, positions):
-        start = self.position[2]
-        stop = start + SRC[self.source].shape[2]
-        self._wobble[:] = positions[start:stop]
-        finite = np.all(np.isfinite(positions[start:stop]), axis=1)
-        non_finite = np.logical_not(finite)
-        self.status[non_finite] = self.INVALID
-
-    def lower_wobbly(self):
-        wobble_min = np.min(self._wobble, axis=0)
-        return self._wobble_to_position(wobble_min, self.position[2])
-
-    def upper_wobbly(self):
-        wobble_max = np.max(self._wobble, axis=0)
-        position = self._wobble_to_position(wobble_max, self.position[2])
-        shape = SRC[self.source].shape
-        return tuple(p + s for p, s in zip(position, shape))
-
-    def coordinate_to_local(self, coordinate):
-        position = self.position[2]
-        shape = SRC[self.source].shape[2]
-        if coordinate < position or coordinate >= position + shape:
-            raise RuntimeError('Coordinate %d out of range (%d,%d)!' %
-                               (coordinate, position, position + shape))
-        return coordinate - position
-
-    def wobble_at_coordinate(self, coordinate):
-        local_coordinate = self.coordinate_to_local(coordinate)
-        return self._wobble[local_coordinate]
-
-    def status_at_coordinate(self, coordinate):
-        local_coordinate = self.coordinate_to_local(coordinate)
-        return self.status[local_coordinate]
-
-    def set_status_at_coordinate(self, coordinate, status):
-        local_coordinate = self.coordinate_to_local(coordinate)
-        self.status[local_coordinate] = status
-
     def is_valid(self, coordinate):
         return 0 <= coordinate - self.position[2] < SRC[self.source].shape[
-            2] and self.status_at_coordinate(coordinate) >= self.VALID
+            2] and self.status[coordinate - self.position[2]] == self.VALID
 
     def set_invalid(self, coordinate):
         if 0 <= coordinate - self.position[2] < SRC[self.source].shape[2]:
-            self.set_status_at_coordinate(coordinate, self.INVALID)
+            self.status[coordinate - self.position[2]] = self.INVALID
 
     def set_isolated(self, coordinate):
         if 0 <= coordinate - self.position[2] < SRC[self.source].shape[2]:
-            self.set_status_at_coordinate(coordinate, self.ISOLATED)
-
-    def _wobble_to_position(self, wobble, coordinate):
-        return tuple(wobble[:2]) + (coordinate, ) + tuple(wobble[2:])
+            self.status[coordinate - self.position[2]] = self.ISOLATED

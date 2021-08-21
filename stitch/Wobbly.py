@@ -43,8 +43,10 @@ MEASURED = 1
 ALIGNED = 2
 FIXED = 3
 
+
 class WobblyAlignment:
     pass
+
 
 def fix_unaligned(status, displacements, qualities):
     n_status = len(status)
@@ -94,20 +96,29 @@ def fix_unaligned(status, displacements, qualities):
             status[s:e] = FIXED
 
 
-def ini(sources, pairs, tile_positions, positions):
-    sources = tuple(
-        glb.WobblySource(s, p, tile_position=t)
-        for s, p, t in zip(sources, positions, tile_positions))
+def lower_wobbly0(_wobble, position):
+    wobble_min = np.min(_wobble, axis=0)
+    return wobble_min[0], wobble_min[1], position[2]
 
-    return alignments, sources
+
+def upper_wobbly0(_wobble, position, source):
+    wobble_max = np.max(_wobble, axis=0)
+    position = wobble_max[0], wobble_max[1], position[2]
+    shape = glb.SRC[source].shape
+    return tuple(p + s for p, s in zip(position, shape))
 
 
 def lower_wobbly(sources):
-    return tuple(np.min([s.lower_wobbly() for s in sources], axis=0))
+    return tuple(
+        np.min([lower_wobbly0(s._wobble, s.position) for s in sources],
+               axis=0))
 
 
 def upper_wobbly(sources):
-    return tuple(np.max([s.upper_wobbly() for s in sources], axis=0))
+    return tuple(
+        np.max(
+            [upper_wobbly0(s._wobble, s.position, s.source) for s in sources],
+            axis=0))
 
 
 def origin_wobbly(sources):
@@ -123,7 +134,7 @@ def slice_along_axis_wobbly(sources, coordinate):
     sources = [source for source in sources if source.is_valid(coordinate)]
     sliced_sources = []
     for source in sources:
-        position = source.wobble_at_coordinate(coordinate)
+        position = source._wobble[coordinate - source.position[2]]
         sliced_sources.append(
             Slice0(source=source.source,
                    coordinate=coordinate - source.position[2],
@@ -152,7 +163,8 @@ def align(pairs, sources, alignments, max_shifts, prepare, find_shifts,
             results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
     for a, (i, j), (shift, qualities, status) in zip(alignments, pairs,
                                                      results):
-        a.displacements = np.array(shift) + sources[j].position[:2] - sources[i].position[:2]
+        a.displacements = np.array(
+            shift) + sources[j].position[:2] - sources[i].position[:2]
         a.qualities = qualities
         a.status = status
 
@@ -338,14 +350,8 @@ def shifts_from_tracing(errors,
     return shifts, qualities, status
 
 
-def place(pairs,
-          alignments,
-          sources,
-          min_quality,
-          smooth,
-          smooth_optimized,
-          processes,
-          verbose):
+def place(pairs, alignments, sources, min_quality, smooth, smooth_optimized,
+          processes, verbose):
     smooth, smooth_optimized = [
         dict(method=m) if isinstance(m, str) else m
         for m in (smooth, smooth_optimized)
@@ -355,8 +361,7 @@ def place(pairs,
     hi = max(s.position[2] + glb.SRC[s.source].shape[2] for s in sources)
     n_slices = hi - lo
     if verbose:
-        sys.stderr.write('Placement: %d slices\n' %
-                         (n_slices))
+        sys.stderr.write('Placement: %d slices\n' % (n_slices))
     positions = np.array(
         [s.position[:2] + s.position[2 + 1:] for s in sources])
     alignment_pairs = np.array(pairs)
@@ -374,7 +379,9 @@ def place(pairs,
             valids = a.status >= VALID
             if min_quality:
                 valids = np.logical_and(valids, a.qualities > min_quality)
-            displacements[l:u,k] = smooth_displacements(a.displacements, valids, **smooth)
+            displacements[l:u,
+                          k] = smooth_displacements(a.displacements, valids,
+                                                    **smooth)
         else:
             displacements[l:u, k] = a.displacements
         qualities[l:u, k] = a.qualities
@@ -413,7 +420,12 @@ def place(pairs,
         np.min(np.min(positions_optimized_valid, axis=0), axis=0))
     positions_optimized -= min_pos
     for s, p in zip(sources, positions_optimized):
-        s.wobble_from_positions(p)
+        start = s.position[2]
+        stop = start + glb.SRC[s.source].shape[2]
+        s._wobble[:] = p[start:stop]
+        finite = np.all(np.isfinite(p[start:stop]), axis=1)
+        non_finite = np.logical_not(finite)
+        s.status[non_finite] = s.INVALID
 
 
 def _place_slice(displacements,
