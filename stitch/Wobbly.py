@@ -422,11 +422,8 @@ def shifts_from_tracing(errors,
 
 def place(layout,
           min_quality=None,
-          method='optimization',
           smooth=None,
           smooth_optimized=None,
-          fix_isolated=True,
-          lower_to_origin=True,
           processes=None,
           verbose=False):
     smooth, smooth_optimized = [
@@ -489,32 +486,21 @@ def place(layout,
                 layout.sources[c[0]].set_isolated(coordinate=s)
     components = [[c for c in components_slice if len(c) > 1]
                   for components_slice in components]
-    if method == 'optimization':
-        positions_optimized = _optimize_slice_positions(positions_new,
-                                                        components,
-                                                        processes=processes,
-                                                        verbose=verbose)
-    else:
-        if verbose:
-            sys.stderr.write('Placement: combining wobbly positions\n')
-        positions_optimized = _straighten_slice_positions(
-            positions_new, components, layout.tile_positions)
+    positions_optimized = _optimize_slice_positions(positions_new,
+                                                    components,
+                                                    processes=processes,
+                                                    verbose=verbose)
     positions_optimized = positions_optimized.swapaxes(0, 1)
     if smooth_optimized:
         for p in positions_optimized:
             valids = np.all(np.isfinite(p), axis=1)
             p[:] = smooth_positions(p, valids=valids, **smooth_optimized)
-    if lower_to_origin:
-        positions_optimized_valid = np.ma.masked_invalid(positions_optimized)
-        min_pos = np.array(
-            np.min(np.min(positions_optimized_valid, axis=0), axis=0))
-        positions_optimized -= min_pos
+    positions_optimized_valid = np.ma.masked_invalid(positions_optimized)
+    min_pos = np.array(
+        np.min(np.min(positions_optimized_valid, axis=0), axis=0))
+    positions_optimized -= min_pos
     for s, p in zip(layout.sources, positions_optimized):
         s.wobble_from_positions(p)
-
-    if fix_isolated:
-        for source in layout.sources:
-            source.fix_isolated()
 
 
 def _place_slice(displacements,

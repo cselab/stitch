@@ -77,7 +77,6 @@ stw.align(layout.alignments,
           verbose=verbose)
 stw.place(layout,
           min_quality=-np.inf,
-          method='optimization',
           smooth=dict(method='window',
                       window='hamming',
                       window_length=100,
@@ -86,8 +85,6 @@ stw.place(layout,
                                 window='bartlett',
                                 window_length=20,
                                 binary=10),
-          fix_isolated=False,
-          lower_to_origin=True,
           processes=processes,
           verbose=verbose)
 
