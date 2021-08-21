@@ -52,7 +52,9 @@ for x in range(tx):
             pairs.append((i, (x + 1) * ty + y))
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
-src = tuple(np.memmap(os.path.join(di, e), dtype, 'r', 0, (kx, ky, kz), order='F') for e in path)
+src = tuple(
+    np.memmap(os.path.join(di, e), dtype, 'r', 0, (kx, ky, kz), order='F')
+    for e in path)
 glb.SRC[:] = src[:]
 layout = stw.WobblyLayout(tuple(range(len(glb.SRC))),
                           pairs,
@@ -68,8 +70,7 @@ st.align(layout.alignments,
          verbose=verbose)
 st.place(layout.alignments, layout.sources)
 stw.align_layout(layout.alignments,
-                 max_shifts=[(-20 // sx, 20 // sx), (-20 // sy, 20 // sy),
-                             (0, 0)],
+                 max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
                  prepare=True,
                  find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
                  processes=processes,

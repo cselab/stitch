@@ -11,6 +11,7 @@ import stitch.glb as glb
 import stitch.union_find as union_find
 import os
 
+
 class Layout1:
     def __init__(self, sources):
         self.sources = sources
@@ -220,70 +221,71 @@ def align_layout(alignments, max_shifts, prepare, find_shifts, verbose,
                  processes):
     if verbose:
         sys.stderr.write('Wobbly: aligning %d pairs of wobbly sources\n' %
-              len(alignments))
+                         len(alignments))
+
+    def a2arg(a):
+        return a.pre.source, a.pre.position, a.post.source, a.post.position
+
     f = ft.partial(align_pair,
                    max_shifts=max_shifts,
                    prepare=prepare,
                    find_shifts=find_shifts,
                    verbose=verbose)
     if processes == 'serial':
-        results = [f(a.pre, a.post) for a in alignments]
+        results = [f(*a2arg(a)) for a in alignments]
     else:
         with mp.Pool(processes) as e:
-            results = e.starmap(f, ((a.pre, a.post) for a in alignments))
+            results = e.starmap(f, (a2arg(a) for a in alignments))
     for a, r in zip(alignments, results):
-        a.shifts = r[0]
-        a.qualities = r[1]
-        a.status = r[2]
+        a.shifts, a.qualities, a.status = r
 
 
-def align_pair(source1, source2, max_shifts, prepare, find_shifts, verbose):
+def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
+               verbose):
     if verbose:
         sys.stderr.write('Wobbly: align_pair\n')
     find_shifts = dict(method=find_shifts)
-    p1 = source1.position
-    p2 = source2.position
-    s1 = glb.SRC[source1.source].shape
-    s2 = glb.SRC[source2.source].shape
+    s1 = glb.SRC[source1].shape
+    s2 = glb.SRC[source2].shape
 
-    p1a = p1[2]
-    p2a = p2[2]
+    z1 = p1[2]
+    z2 = p2[2]
 
-    start = max(p1a, p2a)
-    stop = min(p1a + s1[2], p2a + s2[2])
+    (mlx, mux), (mly, muy) = max_shifts
+
+    start = max(z1, z2)
+    stop = min(z1 + s1[2], z2 + s2[2])
     if start > stop:
         raise ValueError('The sources do not overlap!')
     n_slices = stop - start
-    max_shifts = max_shifts[:2]
-    s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = strg.padding0(s1[0], p2[0] - p1[0], s2[0], max_shifts[0][0], max_shifts[0][1])
-    s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = strg.padding0(s1[1], p2[1] - p1[1], s2[1], max_shifts[1][0], max_shifts[1][1])
-    np1 = np1x, np1y
-    np2 = np2x, np2y
-
-    roi = (slice(roilx, roiux), slice(roily, roiuy))
-    i1 = glb.SRC[source1.source][s1lx:s1ux, s1ly:s1uy, start - p1a:stop - p1a]
-    i2 = glb.SRC[source2.source][s2lx:s2ux, s2ly:s2uy, start - p2a:stop - p2a]
+    s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = strg.padding0(
+        s1[0], p2[0] - p1[0], s2[0], mlx, mux)
+    s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = strg.padding0(
+        s1[1], p2[1] - p1[1], s2[1], mly, muy)
+    i1 = glb.SRC[source1][s1lx:s1ux, s1ly:s1uy, start - z1:stop - z1]
+    i2 = glb.SRC[source2][s2lx:s2ux, s2ly:s2uy, start - z2:stop - z2]
     if prepare:
         b10, b11 = norm_coef(i1)
         b20, b21 = norm_coef(i2)
     status = WobblyAlignment.INVALID * np.ones(n_slices, dtype=int)
-    error_shape = (n_slices, ) + tuple(
-        -s.start if s.start is not None else s.stop for s in roi)
-    errors = np.zeros(error_shape)
-    shape1 = i1.shape[:2] + i1.shape[2 + 1:]
-    w1 = np.pad(np.zeros(shape1), (pad1x, pad1y), 'constant')
-    w1[np1] = 1
+    errors = np.zeros((n_slices, roiux if roilx is None else -roilx,
+                       roiuy if roily is None else -roily))
+    sx = s1ux - s1lx + pad1x[0] + pad1x[1]
+    sy = s1uy - s1ly + pad1y[0] + pad1y[1]
+
+    w1 = np.zeros((sx, sy))
+    w1[np1x, np1y] = 1
     w1fft = np.fft.fftn(w1)
 
-    w2 = np.pad(np.zeros(shape1), (pad2x, pad2y), 'constant')
-    w2[np2] = 1
+    w2 = np.zeros((sx, sy))
+    w2[np2x, np2y] = 1
     w2fft = np.fft.fftn(w2)
     nrm = np.fft.ifftn(w1fft * np.conj(w2fft))
-    nrm = np.abs(nrm[roi])
+    nrm = np.abs(nrm[roilx:roiux, roily:roiuy])
     eps = 2.2204e-16
     nrm[nrm < eps] = eps
     for i, a in enumerate(range(start, stop)):
-        if verbose and i % 100 == 0:
+        if verbose and (i - start) % 100 == 0:
             sys.stderr.write('Wobbly: alignment: slice %d / %d\n' %
                              (i, stop - start))
         if prepare:
@@ -298,17 +300,14 @@ def align_pair(source1, source2, max_shifts, prepare, find_shifts, verbose):
         wssd = w1fft * np.conj(s2fft) + s1fft * np.conj(
             w2fft) - 2 * i1fft * np.conj(i2fft)
         wssd = np.fft.ifftn(wssd)
-        wssd = wssd[roi]
-        wssd = np.abs(wssd)
-        wssd = wssd / nrm
-        errors[i] = wssd
+        wssd = wssd[roilx:roiux, roily:roiuy]
+        errors[i] = np.abs(wssd / nrm)
         status[i] = WobblyAlignment.MEASURED
     shifts, qualities, status = shifts_from_tracing(errors, status,
                                                     **find_shifts)
-    shift_min = max_shifts[0][0], max_shifts[1][0]
-    shifts = [
-        tuple(s + m for s, m in zip(shift, shift_min)) for shift in shifts
-    ]
+    for i in range(n_slices):
+        shifts[i][0] += mlx
+        shifts[i][1] += mly
     return shifts, qualities, status
 
 
@@ -444,7 +443,8 @@ def place(layout,
         return
 
     if verbose:
-        sys.stderr.write('Placement: placing positions in %d slices\n' % (n_slices))
+        sys.stderr.write('Placement: placing positions in %d slices\n' %
+                         (n_slices))
     source_to_index = {s: i for i, s in enumerate(sources)}
     positions = np.array(
         [s.position[:2] + s.position[2 + 1:] for s in sources])
@@ -644,13 +644,15 @@ def _optimize_slice_positions(positions,
     cluster_components, si_to_c, c_to_si = _cluster_components(components)
     n_components = len(cluster_components)
     if verbose:
-        sys.stderr.write('Placement: found %d components to optimize!\n' % n_components)
+        sys.stderr.write('Placement: found %d components to optimize!\n' %
+                         n_components)
     for cci, cluster_component in enumerate(cluster_components):
         n_clusters = len(cluster_component)
         n_s = (n_clusters - 1)
         if verbose:
-            sys.stderr.write('Placement: optimizing component %d/%d with %d clusters\n' %
-                  (cci, n_components, n_clusters))
+            sys.stderr.write(
+                'Placement: optimizing component %d/%d with %d clusters\n' %
+                (cci, n_components, n_clusters))
         slice_to_cluster_ids = [()] * n_slices
         for c in cluster_component:
             s, i = c_to_si(c)
@@ -726,7 +728,7 @@ def _optimize_slice_positions(positions,
 
         if verbose:
             sys.stderr.write('Placement: component %d/%d optimized\n' %
-                  (cci, n_components))
+                             (cci, n_components))
     return positions
 
 
@@ -820,7 +822,8 @@ def stitch(layout, processes, verbose):
         if sources:
             layout_slices.append((i, Layout1(sources=sources)))
     if verbose:
-        sys.stderr.write('Stitching: stitching %d sliced layouts\n' % len(coordinates))
+        sys.stderr.write('Stitching: stitching %d sliced layouts\n' %
+                         len(coordinates))
     _stitch = ft.partial(_stitch_slice,
                          ox=origin[0],
                          oy=origin[1],

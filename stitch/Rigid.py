@@ -40,16 +40,13 @@ def padding0(s1, p2, s2, minx, maxx):
         roil = -(maxx - minx)
         roiu = None
 
-    s1l = o1l
-    s1u = o1u
-    s2l = o2l - p2
-    s2u = o2u - p2
-    return s1l, s1u, s2l, s2u, pad1, pad2, np1, np2, roil, roiu
+    return o1l, o1u, o2l - p2, o2u - p2, pad1, pad2, np1, np2, roil, roiu
 
 
-def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background, verbose):
+def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
+               verbose):
     if verbose:
-        sys.stderr.write('Rigid: %d: start align_pair\n' %  os.getpid())
+        sys.stderr.write('Rigid: %d: start align_pair\n' % os.getpid())
     depth = depth[axis]
     max_shifts = max_shifts[:axis] + max_shifts[axis + 1:]
     s1 = glb.SRC[src1].shape
@@ -64,9 +61,13 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background, ver
         mip1 = np.max(glb.SRC[src1][:, d1:, :], axis=axis)
         mip2 = np.max(glb.SRC[src2][:, :d2, :], axis=axis)
         shift = shift[0], shift[2]
-    s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = padding0(mip1.shape[0], shift[0], mip1.shape[0], max_shifts[0][0], max_shifts[0][1])
+    s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = padding0(
+        mip1.shape[0], shift[0], mip1.shape[0], max_shifts[0][0],
+        max_shifts[0][1])
 
-    s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = padding0(mip2.shape[1], shift[1], mip2.shape[1], max_shifts[1][0], max_shifts[1][1])
+    s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = padding0(
+        mip2.shape[1], shift[1], mip2.shape[1], max_shifts[1][0],
+        max_shifts[1][1])
     np1 = np1x, np1y
     np2 = np2x, np2y
     max_shifts = np.array(max_shifts, dtype=int)
@@ -113,7 +114,8 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background, ver
     shift_min = max_shifts[0][0], max_shifts[1][0]
     shift = tuple(s + m for s, m in zip(shift, shift_min))
     if verbose:
-        sys.stderr.write('Rigid: %d: shift = %r, quality = %.2e\n' % (os.getpid(), shift, quality))
+        sys.stderr.write('Rigid: %d: shift = %r, quality = %.2e\n' %
+                         (os.getpid(), shift, quality))
     if axis == 0:
         return (0, shift[0], shift[1]), quality
     else:
@@ -122,17 +124,19 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background, ver
 
 def align(alignments, depth, max_shifts, clip, background, processes, verbose):
     f = ft.partial(align_pair,
-                        depth=depth,
-                        max_shifts=max_shifts,
-                        clip=clip,
-                        background=background,
-                        verbose=verbose)
+                   depth=depth,
+                   max_shifts=max_shifts,
+                   clip=clip,
+                   background=background,
+                   verbose=verbose)
+
     def a2arg(a):
         axis = 1 if a.pre.tile_position[0] == a.post.tile_position[0] else 0
         shift = (a.pre.position[0] - a.post.position[0],
                  a.pre.position[1] - a.post.position[1],
                  a.pre.position[2] - a.post.position[2])
         return a.pre.source, a.post.source, shift, axis
+
     if processes == 'serial':
         results = [f(*a2arg(a)) for a in alignments]
     else:
@@ -144,10 +148,11 @@ def align(alignments, depth, max_shifts, clip, background, processes, verbose):
             q + s - p
             for p, q, s in zip(a.pre.position, a.post.position, shift))
 
+
 def place(alignments, sources):
     n = 3 * len(alignments)
     m = 3 * (len(sources) - 1)
-    s = [ ]
+    s = []
     for a in alignments:
         s.extend(a.displacement)
     M = np.zeros((n, m))

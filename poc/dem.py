@@ -9,7 +9,7 @@ import stitch.glb as glb
 
 me = "dem.py"
 dtype = np.dtype("<u2")
-processes = 16 # multiprocessing.cpu_count()
+processes = 16  # multiprocessing.cpu_count()
 #processes = 'serial'
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 tx, ty = 3, 5
@@ -33,8 +33,9 @@ path = (
     '1.2.HC_X0_Y-2500_640_nm_4x_Right_000005.raw',
     '1.2.HC_X0_Y0_640_nm_4x_Right_000002.raw',
 )
-glb.SRC = tuple(np.memmap(os.path.join(di, e), dtype, 'r', 0, (nz, ny, nx), 'F')[::sx,::sy,::sz].copy()
-            for e in path)
+glb.SRC = tuple(
+    np.memmap(os.path.join(di, e), dtype, 'r', 0, (
+        nz, ny, nx), 'F')[::sx, ::sy, ::sz].copy() for e in path)
 kx, ky, kz = glb.SRC[0].shape
 ox = 434 // sx
 oy = 425 // sy
@@ -64,8 +65,7 @@ st.align(layout.alignments,
          verbose=True)
 st.place(layout.alignments, layout.sources)
 stw.align_layout(layout.alignments,
-                 max_shifts=[(-20 // sx, 20 // sx), (-20 // sy, 20 // sy),
-                             (0, 0)],
+                 max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
                  prepare=True,
                  find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
                  processes=processes,
