@@ -149,60 +149,27 @@ class WobblyAlignment:
                 status[s:e] = self.FIXED
 
 
-class WobblyLayout:
-    def __init__(self, sources, pairs, tile_positions, positions):
-        self.shape = None
-        self.sources = tuple(
-            glb.WobblySource(s, p, tile_position=t)
-            for s, p, t in zip(sources, positions, tile_positions))
-        self.alignments = tuple(
-            WobblyAlignment(pre=self.sources[i], post=self.sources[j])
-            for i, j in pairs)
+def ini(sources, pairs, tile_positions, positions):
+    sources = tuple(
+        glb.WobblySource(s, p, tile_position=t)
+        for s, p, t in zip(sources, positions, tile_positions))
+    alignments = tuple(
+        WobblyAlignment(pre=sources[i], post=sources[j])
+        for i, j in pairs)
+    return alignments, sources
 
-    @property
-    def extent(self):
-        return tuple(u - l for l, u in zip(self.lower, self.upper))
+def lower_wobbly(sources):
+    return tuple(np.min([s.lower_wobbly for s in sources], axis=0))
 
-    @property
-    def sources(self):
-        return self._sources
+def upper_wobbly(sources):
+    return tuple(np.max([s.upper_wobbly for s in sources], axis=0))
 
-    @sources.setter
-    def sources(self, sources):
-        self._sources = sources
+def origin_wobbly(sources):
+    return tuple(min(p, 0) for p in lower_wobbly(sources))
 
-    @property
-    def position(self):
-        return self.lower
-
-    @property
-    def lower(self):
-        return tuple(np.min([s.position for s in self.sources], axis=0))
-
-    @property
-    def upper(self):
-        return tuple(np.max([s.upper for s in self.sources], axis=0))
-
-    @property
-    def shape(self):
-        return tuple(u - o for u, o in zip(self.upper, self.origin))
-
-    @shape.setter
-    def shape(self, shape):
-        self._shape = shape
-
-    def lower_wobbly(self):
-        return tuple(np.min([s.lower_wobbly for s in self.sources], axis=0))
-
-    def upper_wobbly(self):
-        return tuple(np.max([s.upper_wobbly for s in self.sources], axis=0))
-
-    def origin_wobbly(self):
-        return tuple(min(p, 0) for p in self.lower_wobbly())
-
-    def shape_wobbly(self):
-        return tuple(
-            u - o for u, o in zip(self.upper_wobbly(), self.origin_wobbly()))
+def shape_wobbly(sources):
+    return tuple(
+        u - o for u, o in zip(upper_wobbly(sources), origin_wobbly(sources)))
 
 
 def slice_along_axis_wobbly(sources, coordinate):
@@ -420,7 +387,7 @@ def shifts_from_tracing(errors,
     return shifts, qualities, status
 
 
-def place(layout,
+def place(alignments, sources,
           min_quality=None,
           smooth=None,
           smooth_optimized=None,
@@ -431,13 +398,9 @@ def place(layout,
         for m in (smooth, smooth_optimized)
     ]
 
-    sources = layout.sources
-    alignments = layout.alignments
-    n_slices = layout.extent[2]
-    n_sources = len(sources)
-    if n_sources == 0 or n_slices == 0:
-        return
-
+    lo = min(s.position[2] for s in sources)
+    hi  = max(s.position[2] + glb.SRC[s.source].shape[2] for s in sources)
+    n_slices = hi - lo
     if verbose:
         sys.stderr.write('Placement: placing positions in %d slices\n' %
                          (n_slices))
@@ -483,7 +446,7 @@ def place(layout,
     for s, components_slice in enumerate(components):
         for c in components_slice:
             if len(c) == 1:
-                layout.sources[c[0]].set_isolated(coordinate=s)
+                sources[c[0]].set_isolated(coordinate=s)
     components = [[c for c in components_slice if len(c) > 1]
                   for components_slice in components]
     positions_optimized = _optimize_slice_positions(positions_new,
@@ -499,7 +462,7 @@ def place(layout,
     min_pos = np.array(
         np.min(np.min(positions_optimized_valid, axis=0), axis=0))
     positions_optimized -= min_pos
-    for s, p in zip(layout.sources, positions_optimized):
+    for s, p in zip(sources, positions_optimized):
         s.wobble_from_positions(p)
 
 
@@ -795,21 +758,21 @@ def smooth_displacements(displacements, valids, method='window', **kwargs):
     return displacements_smooth
 
 
-def stitch(layout, processes, verbose):
+def stitch(sources, processes, verbose):
     if verbose:
         sys.stderr.write('Stitching: stitching wobbly layout\n')
-    origin = layout.origin_wobbly()
-    shape = layout.shape_wobbly()
+    origin = origin_wobbly(sources)
+    shape = shape_wobbly(sources)
     coordinates = np.arange(origin[2], origin[2] + shape[2])
     layout_slices = []
     for i, c in enumerate(coordinates):
-        sources = slice_along_axis_wobbly(layout.sources, c)
-        if sources:
-            layout_slices.append((i, Layout1(sources=sources)))
+        s = slice_along_axis_wobbly(sources, c)
+        if s:
+            layout_slices.append((i, Layout1(sources=s)))
     if verbose:
         sys.stderr.write('Stitching: stitching %d sliced layouts\n' %
                          len(coordinates))
-    _stitch = ft.partial(_stitch_slice,
+    f = ft.partial(_stitch_slice,
                          ox=origin[0],
                          oy=origin[1],
                          sx=shape[0],
@@ -817,10 +780,10 @@ def stitch(layout, processes, verbose):
                          verbose=verbose)
     if processes == 'serial':
         for i, l in layout_slices:
-            _stitch(i, l)
+            f(i, l)
     else:
         with mp.Pool(processes) as e:
-            e.starmap(_stitch, layout_slices)
+            e.starmap(f, layout_slices)
 
 
 def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):

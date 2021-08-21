@@ -10,8 +10,8 @@ import stitch.glb as glb
 me = "stitch0.py"
 verbose = False
 dtype = np.dtype("<u2")
-#processes = multiprocessing.cpu_count()
-processes = 'serial'
+processes = multiprocessing.cpu_count()
+#processes = 'serial'
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 di = '/home/lisergey/stride8'
 tx, ty = 2, 2
@@ -57,11 +57,11 @@ src = tuple(
     np.memmap(os.path.join(di, e), dtype, 'r', 0, (kx, ky, kz), order='F')
     for e in path)
 glb.SRC[:] = src[:]
-layout = stw.WobblyLayout(tuple(range(len(glb.SRC))),
-                          pairs,
-                          tile_positions=tile_positions,
-                          positions=positions)
-st.align(layout.alignments,
+alignments, sources = stw.ini(tuple(range(len(glb.SRC))),
+                              pairs,
+                              tile_positions=tile_positions,
+                              positions=positions)
+st.align(alignments,
          depth=[434 // sx, 425 // sy, None],
          max_shifts=[(-80 // sx, 80 // sx), (-80 // sy, 80 // sy),
                      (-120 // sz, 120 // sz)],
@@ -69,14 +69,14 @@ st.align(layout.alignments,
          clip=25000,
          processes=processes,
          verbose=verbose)
-st.place(layout.alignments, layout.sources)
-stw.align(layout.alignments,
+st.place(alignments, sources)
+stw.align(alignments,
           max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
           prepare=True,
           find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
           processes=processes,
           verbose=verbose)
-stw.place(layout,
+stw.place(alignments, sources,
           min_quality=-np.inf,
           smooth=dict(method='window',
                       window='hamming',
@@ -89,11 +89,11 @@ stw.place(layout,
           processes=processes,
           verbose=verbose)
 
-ux, uy, uz = layout.shape_wobbly()
+ux, uy, uz = stw.shape_wobbly(sources)
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-stw.stitch(layout, processes, verbose=verbose)
+stw.stitch(sources, processes, verbose=verbose)
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))

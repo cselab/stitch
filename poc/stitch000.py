@@ -74,7 +74,7 @@ stw.align(layout.alignments,
           find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
           processes=processes,
           verbose=True)
-stw.place(layout,
+stw.place(layout.alignments, layout.sources,
           min_quality=-np.inf,
           smooth=dict(method='window',
                       window='hamming',
