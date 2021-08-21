@@ -60,7 +60,7 @@ alignments = tuple(stw.WobblyAlignment() for p in pairs)
 sources = tuple(
     glb.WobblySource(i, p, tile_position=t)
     for i, (p, t) in enumerate(zip(positions, tile_positions)))
-results = st.align(pairs,
+shifts, qualities = st.align(pairs,
                    positions,
                    tile_positions,
                    depth=[434 // sx, 425 // sy, None],
@@ -71,22 +71,11 @@ results = st.align(pairs,
                    processes=processes,
                    verbose=verbose)
 
-
-class A:
-    pass
-
-
-aa = A()
-qualities = []
 displacements = []
-for a, (i, j), (shift, quality) in zip(alignments, pairs, results):
-    qualities.append(quality)
+for (i, j), shift, in zip(pairs, shifts):
     displacements.append(
         tuple(q + s - p for p, q, s in zip(positions[i],
                                            positions[j], shift)))
-    aa.displacement = tuple(
-        q + s - p
-        for p, q, s in zip(positions[i], positions[j], shift))
 
 st.place(pairs, sources, displacements)
 stw.align(pairs,

@@ -143,7 +143,7 @@ def align(pairs, positions, tile_position, depth, max_shifts, clip, background, 
     else:
         with mp.Pool(processes) as e:
             results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
-    return results
+    return zip(*results)
 
 
 def place(pairs, sources, displacement):
