@@ -82,11 +82,11 @@ displacements = []
 for a, (i, j), (shift, quality) in zip(alignments, pairs, results):
     qualities.append(quality)
     displacements.append(
-        tuple(q + s - p for p, q, s in zip(sources[i].position,
-                                           sources[j].position, shift)))
+        tuple(q + s - p for p, q, s in zip(positions[i],
+                                           positions[j], shift)))
     aa.displacement = tuple(
         q + s - p
-        for p, q, s in zip(sources[i].position, sources[j].position, shift))
+        for p, q, s in zip(positions[i], positions[j], shift))
 
 st.place(pairs, sources, displacements)
 stw.align(pairs,
