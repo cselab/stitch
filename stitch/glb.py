@@ -6,9 +6,6 @@ XX = []
 SRC = []
 SINK = []
 
-ALIGNMENTS = []
-
-
 def local_slicing0(position, lower, upper):
     return tuple(
         slice(l - p, u - p) for l, u, p in zip(lower, upper, position))

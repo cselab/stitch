@@ -10,8 +10,8 @@ import stitch.glb as glb
 me = "stitch0.py"
 verbose = False
 dtype = np.dtype("<u2")
-#processes = multiprocessing.cpu_count()
-processes = 'serial'
+processes = multiprocessing.cpu_count()
+#processes = 'serial'
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 di = '/home/lisergey/stride8'
 tx, ty = 2, 2

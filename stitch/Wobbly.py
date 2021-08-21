@@ -221,29 +221,26 @@ def align_layout(alignments, max_shifts, prepare, find_shifts, verbose,
     if verbose:
         sys.stderr.write('Wobbly: aligning %d pairs of wobbly sources\n' %
               len(alignments))
-    _align = ft.partial(align_wobbly_axis0,
-                        max_shifts=max_shifts,
-                        prepare=prepare,
-                        find_shifts=find_shifts,
-                        verbose=verbose)
-    glb.ALIGNMENTS[:] = alignments
+    f = ft.partial(align_pair,
+                   max_shifts=max_shifts,
+                   prepare=prepare,
+                   find_shifts=find_shifts,
+                   verbose=verbose)
     if processes == 'serial':
-        results = [_align(i) for i in range(len(glb.ALIGNMENTS))]
+        results = [f(a.pre, a.post) for a in alignments]
     else:
         with mp.Pool(processes) as e:
-            results = e.map(_align, range(len(glb.ALIGNMENTS)))
+            results = e.starmap(f, ((a.pre, a.post) for a in alignments))
     for a, r in zip(alignments, results):
         a.shifts = r[0]
         a.qualities = r[1]
         a.status = r[2]
 
 
-def align_wobbly_axis0(i, max_shifts, prepare, find_shifts, verbose):
+def align_pair(source1, source2, max_shifts, prepare, find_shifts, verbose):
     if verbose:
-        sys.stderr.write('Wobbly: start align_wobbly_axis0\n')
+        sys.stderr.write('Wobbly: align_pair\n')
     find_shifts = dict(method=find_shifts)
-    source1 = glb.ALIGNMENTS[i].pre
-    source2 = glb.ALIGNMENTS[i].post
     p1 = source1.position
     p2 = source2.position
     s1 = glb.SRC[source1.source].shape
