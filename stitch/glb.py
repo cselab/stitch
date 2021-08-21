@@ -65,12 +65,10 @@ class WobblySource:
         non_finite = np.logical_not(finite)
         self.status[non_finite] = self.INVALID
 
-    @property
     def lower_wobbly(self):
         wobble_min = np.min(self._wobble, axis=0)
         return self._wobble_to_position(wobble_min, self.position[2])
 
-    @property
     def upper_wobbly(self):
         wobble_max = np.max(self._wobble, axis=0)
         position = self._wobble_to_position(wobble_max, self.position[2])

@@ -43,24 +43,19 @@ MEASURED = 1
 ALIGNED = 2
 FIXED = 3
 
+def valids(status, qualities, min_quality):
+    valids = status >= VALID
+    if min_quality:
+        valids = np.logical_and(valids, qualities > min_quality)
+    return valids
+
+def smooth_displacements0(status, qualities, displacements, min_quality=-np.inf, **kwargs):
+    displacements = smooth_displacements(
+        displacements, valids(status, qualities, min_quality=min_quality), **kwargs)
+    return displacements
 
 class WobblyAlignment:
-    def set_shift(self, value, pre_pos, post_pos):
-        pre_pos = pre_pos[:2] + pre_pos[2 + 1:]
-        post_pos = post_pos[:2] + post_pos[2 + 1:]
-        self.displacements = np.array(value) + post_pos - pre_pos
-
-    def valids(self, min_quality=-np.inf):
-        valids = self.status >= VALID
-        if min_quality:
-            valids = np.logical_and(valids, self.qualities > min_quality)
-        return valids
-
-    def smooth_displacements(self, min_quality=-np.inf, **kwargs):
-        displacements = smooth_displacements(
-            self.displacements, self.valids(min_quality=min_quality), **kwargs)
-        return displacements
-
+    pass
 
 def fix_unaligned(status, displacements, qualities):
     n_status = len(status)
@@ -119,11 +114,11 @@ def ini(sources, pairs, tile_positions, positions):
 
 
 def lower_wobbly(sources):
-    return tuple(np.min([s.lower_wobbly for s in sources], axis=0))
+    return tuple(np.min([s.lower_wobbly() for s in sources], axis=0))
 
 
 def upper_wobbly(sources):
-    return tuple(np.max([s.upper_wobbly for s in sources], axis=0))
+    return tuple(np.max([s.upper_wobbly() for s in sources], axis=0))
 
 
 def origin_wobbly(sources):
@@ -168,7 +163,7 @@ def align(pairs, sources, alignments, max_shifts, prepare, find_shifts,
             results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
     for a, (i, j), (shift, qualities, status) in zip(alignments, pairs,
                                                      results):
-        a.set_shift(shift, sources[i].position, sources[j].position)
+        a.displacements = np.array(shift) + sources[j].position[:2] - sources[i].position[:2]
         a.qualities = qualities
         a.status = status
 
@@ -357,11 +352,11 @@ def shifts_from_tracing(errors,
 def place(pairs,
           alignments,
           sources,
-          min_quality=None,
-          smooth=None,
-          smooth_optimized=None,
-          processes=None,
-          verbose=False):
+          min_quality,
+          smooth,
+          smooth_optimized,
+          processes,
+          verbose):
     smooth, smooth_optimized = [
         dict(method=m) if isinstance(m, str) else m
         for m in (smooth, smooth_optimized)
@@ -388,8 +383,10 @@ def place(pairs,
                 sources[j].position[2] + glb.SRC[sources[j].source].shape[2])
         if smooth:
             displacements[l:u,
-                          k] = a.smooth_displacements(min_quality=min_quality,
-                                                      **smooth)
+                          k] = smooth_displacements0(
+                              a.status, a.qualities, a.displacements,
+                              min_quality=min_quality,
+                              **smooth)
         else:
             displacements[l:u, k] = a.displacements
         qualities[l:u, k] = a.qualities

@@ -38,7 +38,6 @@ path = (
 kx = (nx + sx - 1) // sx
 ky = (ny + sy - 1) // sy
 kz = (nz + sz - 1) // sz
-print(kx, ky, kz)
 ox = 434 // sx
 oy = 425 // sy
 positions = []
