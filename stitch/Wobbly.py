@@ -217,8 +217,7 @@ def slice_along_axis_wobbly(sources, coordinate):
     return sliced_sources
 
 
-def align_layout(alignments, max_shifts, prepare, find_shifts, verbose,
-                 processes):
+def align(alignments, max_shifts, prepare, find_shifts, verbose, processes):
     if verbose:
         sys.stderr.write('Wobbly: aligning %d pairs of wobbly sources\n' %
                          len(alignments))

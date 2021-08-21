@@ -64,12 +64,12 @@ st.align(layout.alignments,
          processes=processes,
          verbose=True)
 st.place(layout.alignments, layout.sources)
-stw.align_layout(layout.alignments,
-                 max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
-                 prepare=True,
-                 find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
-                 processes=processes,
-                 verbose=True)
+stw.align(layout.alignments,
+          max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
+          prepare=True,
+          find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
+          processes=processes,
+          verbose=True)
 stw.place(layout,
           min_quality=-np.inf,
           method='optimization',
