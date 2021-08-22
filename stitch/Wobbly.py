@@ -125,14 +125,11 @@ def shape_wobbly(shape, positions, wobble):
 def origin_wobbly(positions, wobble):
     x = y = float('-inf')
     for (px, py, pz), w in zip(positions, wobble):
-        x0, y0 = np.min(w, axis=0) + [px, py]
+        x0, y0 = np.min(w, axis=0)
         x = min(x, x0)
         y = min(y, y0)
     z = min(p[2] for p in positions)
-    x = max(0, x)
-    y = max(0, y)
-    z = max(0, z)
-    return x, y, y
+    return max(0, x), max(0, y), max(0, z)
 
 
 def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
