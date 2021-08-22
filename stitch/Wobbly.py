@@ -183,6 +183,9 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
         if prepare:
             i1a = b11 * i1[:, :, a - start] + b10
             i2a = b21 * i2[:, :, a - start] + b20
+        else:
+            i1a = i1[:, :, a - start]
+            i2a = i2[:, :, a - start]
         i1a = np.pad(i1a, (pad1x, pad1y), 'constant')
         i2a = np.pad(i2a, (pad2x, pad2y), 'constant')
         i1fft = np.fft.fftn(i1a)

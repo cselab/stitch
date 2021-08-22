@@ -146,12 +146,12 @@ def align(pairs, positions, tile_position, depth, max_shifts, clip, background,
     return zip(*results)
 
 
-def place(pairs, n_sources, displacement):
-    n = 3 * len(displacement)
-    m = 3 * (n_sources - 1)
-    s = []
-    for d in displacement:
-        s.extend(d)
+def place(pairs, positions, shifts):
+    n = 3 * len(shifts)
+    m = 3 * (len(positions) - 1)
+    s = [ ]
+    for (i, j), shift in zip(pairs, shifts):
+        s.extend(q + sh - p for p, q, sh in zip(positions[i], positions[j], shift))
     M = np.zeros((n, m))
     k = 0
     for i, j in pairs:
