@@ -711,6 +711,60 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
         with mp.Pool(processes) as e:
             e.starmap(f, layout_slices)
 
+def _add_overlap_region(regions, region):
+    regsadd = [region]
+    regscheck = regions
+    regsnew = []
+    while len(regscheck) > 0 and len(regsadd) > 0:
+        rc = regscheck[0]
+        found = False
+        for a in range(len(regsadd)):
+            ra = regsadd[a]
+            ov = _overlap1(rc, ra)
+            if ov is not None:
+                split = _split_region(rc, ov)
+                for s in split:
+                    s.sources = rc.sources
+                sources = split[0].sources
+                sources += tuple(s for s in ra.sources if s not in sources)
+                split[0].sources = sources
+                regsnew.append(split[0])
+                regscheck = split[1:] + regscheck[1:]
+                split = _split_region(ra, ov)[1:]
+                for s in split:
+                    s.sources = ra.sources
+                regsadd = regsadd[:a] + split + regsadd[a + 1:]
+                found = True
+                break
+        if not found:
+            regsnew.append(rc)
+            regscheck = regscheck[1:]
+    regsnew = regsnew + regscheck + regsadd
+    return regsnew
+
+def embedding(sources, shape, position):
+    regions = []
+    for s in sources:
+        region = glb.Overlap1(lower=s.position, shape=s.shape, sources=(s, ))
+        regions = _add_overlap_region(regions, region)
+    shape = tuple(max(s, 0) for s in shape)
+    new_regions = []
+    for i, r in enumerate(regions):
+        r.lower = tuple(p if l < p else l for l, p in zip(r.lower, position))
+        r.upper = tuple(p if u < p else u for u, p in zip(r.upper, position))
+        if np.all([u > l for u, l in zip(r.upper, r.lower)]):
+            new_regions.append(r)
+    regions = new_regions
+    new_regions = []
+    ps = np.array(position, dtype=int) + shape
+    for i, r in enumerate(regions):
+        r.lower = tuple(p if l > p else l for l, p in zip(r.lower, ps))
+        r.upper = tuple(p if u > p else u for u, p in zip(r.upper, ps))
+        if np.all([u > l for u, l in zip(r.upper, r.lower)]):
+            new_regions.append(r)
+    regions = new_regions
+    return position, shape, regions
+
 
 def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
     if verbose and slice_id % 100 == 0:
@@ -725,13 +779,15 @@ def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
     yu = min(ayu, byu)
     if xu - xl - 1 < 0 or yu - yl - 1 < 0:
         return
+
+    position, shape, regions = embedding(sources=layout.sources,
+                                              shape=layout.shape,
+                                              position=layout.origin)
+
     sxl, sxu = xl - axl, xu - axl
     syl, syu = yl - ayl, yu - ayl
     fxl, fxu = xl - bxl, xu - bxl
     fyl, fyu = yl - byl, yu - byl
-    position, shape, regions = strg.embedding(sources=layout.sources,
-                                              shape=layout.shape,
-                                              position=layout.origin)
     stitched = np.zeros(shape, dtype='<u2', order='F')
     strg.stitch_by_function_with_weights(sources=layout.sources,
                                          position=position,
