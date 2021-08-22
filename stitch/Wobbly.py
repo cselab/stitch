@@ -392,10 +392,10 @@ def place1(positions, positions_new, components, sources, smooth, processes,
            verbose):
     n_sources = len(positions)
     status = [
-        np.zeros((glb.SRC[i].shape[2], 2), dtype=int) for i in range(n_sources)
+        np.zeros(glb.SRC[i].shape[2], dtype=int) for i in range(n_sources)
     ]
     wobble = [
-        np.full(glb.SRC[i].shape[2], S_VALID, dtype=int)
+        np.full((glb.SRC[i].shape[2], 2), S_VALID, dtype=int)
         for i in range(n_sources)
     ]
 
@@ -432,7 +432,7 @@ def place1(positions, positions_new, components, sources, smooth, processes,
         finite = np.all(np.isfinite(p[start:stop]), axis=1)
         non_finite = np.logical_not(finite)
         status[i][non_finite] = s.status[non_finite] = S_INVALID
-    return status, wobble
+    return wobble, status
 
 
 def place_slice(displacements,
