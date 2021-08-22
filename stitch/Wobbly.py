@@ -47,11 +47,6 @@ S_ISOLATED = -2
 S_INVALID = -1
 S_VALID = 0
 
-
-class WobblySource:
-    def __init__(self, source, position, tile_position):
-        pass
-
 def fix_unaligned(status, displacements, qualities):
     n_status = len(status)
     unaligned = np.array(status == UNALIGNED, dtype=int)

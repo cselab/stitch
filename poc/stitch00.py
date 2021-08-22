@@ -10,8 +10,8 @@ import stitch.glb as glb
 me = "stitch0.py"
 verbose = False
 dtype = np.dtype("<u2")
-#processes = multiprocessing.cpu_count()
-processes = 'serial'
+processes = multiprocessing.cpu_count()
+#processes = 'serial'
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 di = '/home/lisergey/stride8'
 tx, ty = 3, 5
@@ -28,7 +28,6 @@ path = (
     '01x02.raw',
     '01x01.raw',
     '01x00.raw',
-
     '00x04.raw',
     '00x03.raw',
     '00x02.raw',
@@ -57,9 +56,6 @@ glb.SRC[:] = (np.memmap(os.path.join(di, e),
                         'r',
                         0, (kx, ky, kz),
                         order='F') for e in path)
-sources = tuple(
-    stw.WobblySource(i, p, tile_position=t)
-    for i, (p, t) in enumerate(zip(positions, tile_positions)))
 shifts, qualities = st.align(pairs,
                              positions,
                              tile_positions,
@@ -77,7 +73,7 @@ for (i, j), shift, in zip(pairs, shifts):
     displacements.append(
         tuple(q + s - p for p, q, s in zip(positions[i], positions[j], shift)))
 
-positions = st.place(pairs, sources, displacements)
+positions = st.place(pairs, len(positions), displacements)
 displacements, qualities, status = stw.align(
     pairs,
     positions,
@@ -102,7 +98,6 @@ positions_new, components = stw.place0(pairs,
 wobble, status = stw.place1(positions,
                             positions_new,
                             components,
-                            sources,
                             smooth=dict(method='window',
                                         window='bartlett',
                                         window_length=20,
@@ -114,7 +109,7 @@ ux, uy, uz = stw.shape_wobbly(glb.SRC[0].shape, positions, wobble)
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-stw.stitch(sources, glb.SRC[0].shape, positions, wobble, status, processes, verbose=verbose)
+stw.stitch(glb.SRC[0].shape, positions, wobble, status, processes, verbose=verbose)
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))
