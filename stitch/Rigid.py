@@ -170,33 +170,6 @@ def place(pairs, n_sources, displacement):
 
 
 
-def _overlap1(region1, region2):
-    ovl = np.max([region1.lower, region2.lower], axis=0)
-    ovu = np.min([region1.upper, region2.upper], axis=0)
-
-    if np.any(ovu - ovl - 1 < 0):
-        return None
-    else:
-        return glb.Overlap2(lower=ovl, upper=ovu)
-
-
-def _split_region(r, o):
-    split = [o]
-    rl, ru = r.lower, r.upper
-    ol, ou = o.lower, o.upper
-    for d in range(2):
-        if rl[d] < ol[d]:
-            l = ol[:d] + rl[d:]
-            u = ou[:d] + (ol[d], ) + ru[d + 1:]
-            split.append(glb.Overlap3(lower=l, upper=u))
-
-        if ou[d] < ru[d]:
-            l = ol[:d] + (ou[d], ) + rl[d + 1:]
-            u = ou[:d] + ru[d:]
-            split.append(glb.Overlap3(lower=l, upper=u))
-    return split
-
-
 def stitch_weights(shape):
     ranges = [np.arange(s) for s in shape]
     mesh = np.meshgrid(*ranges, indexing='ij')

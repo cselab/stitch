@@ -8,7 +8,7 @@ import sys
 import stitch.glb as glb
 
 me = "stitch0.py"
-verbose = False
+verbose = True
 dtype = np.dtype("<u2")
 #processes = multiprocessing.cpu_count()
 processes = 'serial'

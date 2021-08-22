@@ -115,9 +115,7 @@ def origin_wobbly(positions, wobble):
 def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
     if verbose:
-        sys.stderr.write('Wobbly: aligning %d pairs of wobbly sources\n' %
-                         len(alignments))
-
+        sys.stderr.write('Wobbly: start align')
     def a2arg(i, j):
         return i, positions[i], j, positions[j]
 
@@ -711,6 +709,32 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
         with mp.Pool(processes) as e:
             e.starmap(f, layout_slices)
 
+
+def _split_region(r, o):
+    split = [o]
+    rl, ru = r.lower, r.upper
+    ol, ou = o.lower, o.upper
+    for d in range(2):
+        if rl[d] < ol[d]:
+            l = ol[:d] + rl[d:]
+            u = ou[:d] + (ol[d], ) + ru[d + 1:]
+            split.append(glb.Overlap3(lower=l, upper=u))
+
+        if ou[d] < ru[d]:
+            l = ol[:d] + (ou[d], ) + rl[d + 1:]
+            u = ou[:d] + ru[d:]
+            split.append(glb.Overlap3(lower=l, upper=u))
+    return split
+
+def _overlap1(region1, region2):
+    ovl = np.max([region1.lower, region2.lower], axis=0)
+    ovu = np.min([region1.upper, region2.upper], axis=0)
+
+    if np.any(ovu - ovl - 1 < 0):
+        return None
+    else:
+        return glb.Overlap2(lower=ovl, upper=ovu)
+
 def _add_overlap_region(regions, region):
     regsadd = [region]
     regscheck = regions
@@ -742,30 +766,6 @@ def _add_overlap_region(regions, region):
     regsnew = regsnew + regscheck + regsadd
     return regsnew
 
-def embedding(sources, shape, position):
-    regions = []
-    for s in sources:
-        region = glb.Overlap1(lower=s.position, shape=s.shape, sources=(s, ))
-        regions = _add_overlap_region(regions, region)
-    shape = tuple(max(s, 0) for s in shape)
-    new_regions = []
-    for i, r in enumerate(regions):
-        r.lower = tuple(p if l < p else l for l, p in zip(r.lower, position))
-        r.upper = tuple(p if u < p else u for u, p in zip(r.upper, position))
-        if np.all([u > l for u, l in zip(r.upper, r.lower)]):
-            new_regions.append(r)
-    regions = new_regions
-    new_regions = []
-    ps = np.array(position, dtype=int) + shape
-    for i, r in enumerate(regions):
-        r.lower = tuple(p if l > p else l for l, p in zip(r.lower, ps))
-        r.upper = tuple(p if u > p else u for u, p in zip(r.upper, ps))
-        if np.all([u > l for u, l in zip(r.upper, r.lower)]):
-            new_regions.append(r)
-    regions = new_regions
-    return position, shape, regions
-
-
 def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
     if verbose and slice_id % 100 == 0:
         sys.stderr.write('Stitching: slice %d\n' % slice_id)
@@ -780,9 +780,26 @@ def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
     if xu - xl - 1 < 0 or yu - yl - 1 < 0:
         return
 
-    position, shape, regions = embedding(sources=layout.sources,
-                                              shape=layout.shape,
-                                              position=layout.origin)
+    regions = []
+    for s in layout.sources:
+        region = glb.Overlap1(lower=s.position, shape=s.shape, sources=(s, ))
+        regions = _add_overlap_region(regions, region)
+    shape = tuple(max(s, 0) for s in layout.shape)
+    new_regions = []
+    for i, r in enumerate(regions):
+        r.lower = tuple(p if l < p else l for l, p in zip(r.lower, layout.origin))
+        r.upper = tuple(p if u < p else u for u, p in zip(r.upper, layout.origin))
+        if np.all([u > l for u, l in zip(r.upper, r.lower)]):
+            new_regions.append(r)
+    regions = new_regions
+     new_regions = []
+    ps = np.array(layout.origin, dtype=int) + shape
+    for i, r in enumerate(regions):
+        r.lower = tuple(p if l > p else l for l, p in zip(r.lower, ps))
+        r.upper = tuple(p if u > p else u for u, p in zip(r.upper, ps))
+        if np.all([u > l for u, l in zip(r.upper, r.lower)]):
+            new_regions.append(r)
+    regions = new_regions
 
     sxl, sxu = xl - axl, xu - axl
     syl, syu = yl - ayl, yu - ayl
@@ -790,7 +807,7 @@ def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
     fyl, fyu = yl - byl, yu - byl
     stitched = np.zeros(shape, dtype='<u2', order='F')
     strg.stitch_by_function_with_weights(sources=layout.sources,
-                                         position=position,
+                                         position=layout.origin,
                                          regions=regions,
                                          stitched=stitched)
     np.copyto(glb.SINK[0][fxl:fxu, fyl:fyu, slice_id], stitched[sxl:sxu,
