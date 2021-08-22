@@ -56,7 +56,6 @@ src = tuple(
     np.memmap(os.path.join(di, e), dtype, 'r', 0, (kx, ky, kz), order='F')
     for e in path)
 glb.SRC[:] = src[:]
-alignments = tuple(stw.WobblyAlignment() for p in pairs)
 sources = tuple(
     glb.WobblySource(i, p, tile_position=t)
     for i, (p, t) in enumerate(zip(positions, tile_positions)))
@@ -78,16 +77,16 @@ for (i, j), shift, in zip(pairs, shifts):
                                            positions[j], shift)))
 
 positions = st.place(pairs, sources, displacements)
-shifts, qualities, status = stw.align(pairs,
+displacements, qualities, status = stw.align(pairs,
           positions,
-          alignments,
           max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
           prepare=True,
           find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
           processes=processes,
           verbose=verbose)
 stw.place(pairs,
-          alignments,
+          positions,
+          (displacements, qualities, status),
           sources,
           min_quality=-np.inf,
           smooth=dict(method='window',

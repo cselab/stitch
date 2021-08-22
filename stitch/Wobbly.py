@@ -44,9 +44,6 @@ ALIGNED = 2
 FIXED = 3
 
 
-class WobblyAlignment:
-    pass
-
 
 def fix_unaligned(status, displacements, qualities):
     n_status = len(status)
@@ -142,7 +139,7 @@ def slice_along_axis_wobbly(sources, coordinate):
     return sliced_sources
 
 
-def align(pairs, positions, alignments, max_shifts, prepare, find_shifts,
+def align(pairs, positions, max_shifts, prepare, find_shifts,
           verbose, processes):
     if verbose:
         sys.stderr.write('Wobbly: aligning %d pairs of wobbly sources\n' %
@@ -161,12 +158,6 @@ def align(pairs, positions, alignments, max_shifts, prepare, find_shifts,
     else:
         with mp.Pool(processes) as e:
             results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
-    for a, (i, j), (shift, qualities, status) in zip(alignments, pairs,
-                                                     results):
-        a.displacements = np.array(
-            shift) + positions[j][:2] - positions[i][:2]
-        a.qualities = qualities
-        a.status = status
     return zip(*results)
 
 
@@ -351,41 +342,44 @@ def shifts_from_tracing(errors,
     return shifts, qualities, status
 
 
-def place(pairs, alignments, sources, min_quality, smooth, smooth_optimized,
+def place(pairs, positions, alignments, sources, min_quality, smooth, smooth_optimized,
           processes, verbose):
     smooth, smooth_optimized = [
         dict(method=m) if isinstance(m, str) else m
         for m in (smooth, smooth_optimized)
     ]
 
-    lo = min(s.position[2] for s in sources)
-    hi = max(s.position[2] + glb.SRC[s.source].shape[2] for s in sources)
+    lo = min(p[2] for p in positions)
+    hi = max(p[2] + glb.SRC[i].shape[2] for i, p in enumerate(positions))
     n_slices = hi - lo
     if verbose:
         sys.stderr.write('Placement: %d slices\n' % (n_slices))
-    positions = [s.position[:2] for s in sources]
     n_alignments = len(pairs)
     displacements = np.full((n_slices, n_alignments, 2), np.nan)
     qualities = np.full((n_slices, n_alignments), -np.inf)
     status = np.full((n_slices, n_alignments), INVALID, dtype=int)
-    for k, (a, (i, j)) in enumerate(zip(alignments, pairs)):
-        fix_unaligned(a.status, a.displacements, a.qualities)
-        l = max(sources[i].position[2], sources[j].position[2])
-        u = min(sources[i].position[2] + glb.SRC[sources[i].source].shape[2],
-                sources[j].position[2] + glb.SRC[sources[j].source].shape[2])
+    for k in range(n_alignments):
+        i, j = pairs[k]
+        d = alignments[0][k] + positions[j][:2] - positions[i][:2]
+        q = alignments[1][k]
+        s = alignments[2][k]   
+        fix_unaligned(s, d, q)
+        l = max(positions[i][2], positions[j][2])
+        u = min(positions[i][2] + glb.SRC[i].shape[2],
+                positions[j][2] + glb.SRC[j].shape[2])
         if smooth:
-            valids = a.status >= VALID
+            valids = s >= VALID
             if min_quality:
-                valids = np.logical_and(valids, a.qualities > min_quality)
+                valids = np.logical_and(valids, q > min_quality)
             displacements[l:u,
-                          k] = smooth_displacements(a.displacements, valids,
+                          k] = smooth_displacements(d, valids,
                                                     **smooth)
         else:
-            displacements[l:u, k] = a.displacements
-        qualities[l:u, k] = a.qualities
-        status[l:u, k] = a.status
+            displacements[l:u, k] = d
+        qualities[l:u, k] = q
+        status[l:u, k] = s
     f = ft.partial(_place_slice,
-                   positions=positions,
+                   positions=[s.position[:2] for s in sources],
                    alignment_pairs=pairs,
                    min_quality=min_quality)
     if processes == 'serial':
