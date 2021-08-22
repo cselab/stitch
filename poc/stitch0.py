@@ -85,7 +85,7 @@ displacements, qualities, status = stw.align(
     find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
     processes=processes,
     verbose=verbose)
-positions, components = stw.place0(pairs,
+positions_new, components = stw.place0(pairs,
                                    positions, displacements, qualities, status,
                                    smooth=dict(method='window',
                                                window='hamming',
@@ -95,7 +95,7 @@ positions, components = stw.place0(pairs,
                                    processes=processes,
                                    verbose=verbose)
 
-stw.place1(positions, components,
+stw.place1(positions, positions_new, components,
            sources,
            smooth=dict(method='window',
                        window='bartlett',

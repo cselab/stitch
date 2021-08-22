@@ -51,7 +51,6 @@ S_VALID = 0
 class WobblySource:
     def __init__(self, source, position, tile_position):
         shape = glb.SRC[source].shape
-        self.position = position
         self.source = source
         self._wobble = np.zeros((shape[2], 2), dtype=int)
         self.status = np.full(shape[2], S_VALID, dtype=int)
@@ -398,15 +397,16 @@ def place0(pairs, positions, displacements, qualities, status, smooth, min_quali
             results = e.starmap(f, zip(s_displacements, s_qualities, s_status))
     return zip(*results)
 
-def place1(positions_new, components, sources,
+def place1(positions, positions_new, components, sources,
            smooth, processes, verbose):
     positions_new = np.array(positions_new)
     for s, components_slice in enumerate(components):
         for c in components_slice:
             if len(c) == 1:
-                so = sources[c[0]]
-                if 0 <= s - so.position[2] < glb.SRC[so.source].shape[2]:
-                    so.status[s - so.position[2]] = S_ISOLATED
+                i = c[0]
+                so = sources[i]
+                if 0 <= s - positions[i][2] < glb.SRC[i].shape[2]:
+                    so.status[s - positions[i][2]] = S_ISOLATED
     components = [[c for c in components_slice if len(c) > 1]
                   for components_slice in components]
     positions_optimized = _optimize_slice_positions(positions_new,
