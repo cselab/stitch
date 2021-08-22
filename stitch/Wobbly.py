@@ -356,8 +356,8 @@ def shifts_from_tracing(errors,
     return shifts, qualities, status
 
 
-def place(pairs, positions, alignments, sources, min_quality, smooth,
-          smooth_optimized, processes, verbose):
+def place0(pairs, positions, alignments, sources, min_quality, smooth,
+           smooth_optimized, processes, verbose):
     smooth, smooth_optimized = [
         dict(method=m) if isinstance(m, str) else m
         for m in (smooth, smooth_optimized)
@@ -390,8 +390,8 @@ def place(pairs, positions, alignments, sources, min_quality, smooth,
             displacements[l:u, k] = d
         qualities[l:u, k] = q
         status[l:u, k] = s
-    f = ft.partial(_place_slice,
-                   positions=[s.position[:2] for s in sources],
+    f = ft.partial(place_slice,
+                   positions=[p[:2] for p in positions],
                    alignment_pairs=pairs,
                    min_quality=min_quality)
     if processes == 'serial':
@@ -401,8 +401,11 @@ def place(pairs, positions, alignments, sources, min_quality, smooth,
     else:
         with mp.Pool(processes) as e:
             results = e.starmap(f, zip(displacements, qualities, status))
-    positions_new = np.array([r[0] for r in results])
-    components = [r[1] for r in results]
+    return zip(*results)
+
+def place1(positions_new, components, pairs, positions, alignments, sources, min_quality, smooth,
+           smooth_optimized, processes, verbose):
+    positions_new = np.array(positions_new)
     for s, components_slice in enumerate(components):
         for c in components_slice:
             if len(c) == 1:
@@ -431,9 +434,10 @@ def place(pairs, positions, alignments, sources, min_quality, smooth,
         finite = np.all(np.isfinite(p[start:stop]), axis=1)
         non_finite = np.logical_not(finite)
         s.status[non_finite] = S_INVALID
+        
 
 
-def _place_slice(displacements,
+def place_slice(displacements,
                  qualities,
                  status,
                  positions,
