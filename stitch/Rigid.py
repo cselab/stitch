@@ -146,9 +146,9 @@ def align(pairs, positions, tile_position, depth, max_shifts, clip, background,
     return zip(*results)
 
 
-def place(pairs, sources, displacement):
+def place(pairs, n_sources, displacement):
     n = 3 * len(displacement)
-    m = 3 * (len(sources) - 1)
+    m = 3 * (n_sources - 1)
     s = []
     for d in displacement:
         s.extend(d)
@@ -166,8 +166,6 @@ def place(pairs, sources, displacement):
     pos = np.reshape(pos, (-1, 3))
     pos = np.asarray(np.round(pos), dtype=int)
     pos -= np.min(pos, axis=0)
-    for s, p in zip(sources, pos):
-        s.position = tuple(p)
     return [tuple(p) for p in pos]
 
 

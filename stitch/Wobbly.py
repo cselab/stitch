@@ -50,11 +50,7 @@ S_VALID = 0
 
 class WobblySource:
     def __init__(self, source, position, tile_position):
-        shape = glb.SRC[source].shape
-        self.source = source
-        self._wobble = np.zeros((shape[2], 2), dtype=int)
-        self.status = np.full(shape[2], S_VALID, dtype=int)
-
+        pass
 
 def fix_unaligned(status, displacements, qualities):
     n_status = len(status)
@@ -368,7 +364,7 @@ def place0(pairs, positions, displacements, qualities, status, smooth,
     return zip(*results)
 
 
-def place1(positions, positions_new, components, sources, smooth, processes,
+def place1(positions, positions_new, components, smooth, processes,
            verbose):
     n_sources = len(positions)
     wobble = [
@@ -384,10 +380,9 @@ def place1(positions, positions_new, components, sources, smooth, processes,
         for c in components_slice:
             if len(c) == 1:
                 i = c[0]
-                so = sources[i]
                 if 0 <= s - positions[i][2] < glb.SRC[i].shape[2]:
                     z = s - positions[i][2]
-                    status[i][z] = so.status[z] = S_ISOLATED
+                    status[i][z] = S_ISOLATED
     components = [[c for c in components_slice if len(c) > 1]
                   for components_slice in components]
     positions_optimized = _optimize_slice_positions(positions_new,
@@ -404,14 +399,13 @@ def place1(positions, positions_new, components, sources, smooth, processes,
         np.min(np.min(positions_optimized_valid, axis=0), axis=0))
     positions_optimized -= min_pos
     for i in range(n_sources):
-        s = sources[i]
         po = positions_optimized[i]
         start = positions[i][2]
         stop = start + glb.SRC[i].shape[2]
-        s._wobble[:] = wobble[i][:] = po[start:stop]
+        wobble[i][:] = po[start:stop]
         finite = np.all(np.isfinite(p[start:stop]), axis=1)
         non_finite = np.logical_not(finite)
-        status[i][non_finite] = s.status[non_finite] = S_INVALID
+        status[i][non_finite] = S_INVALID
     return wobble, status
 
 
@@ -690,7 +684,7 @@ def smooth_displacements(displacements, valids, method='window', **kwargs):
     return displacements_smooth
 
 
-def stitch(sources, shape0, positions, wobble, status, processes, verbose):
+def stitch(shape0, positions, wobble, status, processes, verbose):
     if verbose:
         sys.stderr.write('Stitching: stitching wobbly layout\n')
     origin = origin_wobbly(positions, wobble)
@@ -699,11 +693,11 @@ def stitch(sources, shape0, positions, wobble, status, processes, verbose):
     layout_slices = []
     for i, c in enumerate(coordinates):
         s = []
-        for j, so in enumerate(sources):
-            z = c - positions[j][2]
+        for j, p in enumerate(positions):
+            z = c - p[2]
             if 0 <= z < shape0[2] and status[j][z] == S_VALID:
                 s.append(
-                    Slice0(j, z, so._wobble[z]))
+                    Slice0(j, z, wobble[j][z]))
         if s:
             layout_slices.append((i, Layout1(sources=s)))
     if verbose:
