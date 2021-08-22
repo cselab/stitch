@@ -391,12 +391,12 @@ def place0(pairs, positions, displacements, qualities, status, smooth,
 def place1(positions, positions_new, components, sources, smooth, processes,
            verbose):
     n_sources = len(positions)
-    status = [
-        np.zeros(glb.SRC[i].shape[2], dtype=int) for i in range(n_sources)
-    ]
     wobble = [
-        np.full((glb.SRC[i].shape[2], 2), S_VALID, dtype=int)
+        np.zeros((glb.SRC[i].shape[2], 2), dtype=int)
         for i in range(n_sources)
+    ]
+    status = [
+        np.full(glb.SRC[i].shape[2], S_VALID, dtype=int) for i in range(n_sources)
     ]
 
     positions_new = np.array(positions_new)
