@@ -710,18 +710,17 @@ def smooth_displacements(displacements, valids, method='window', **kwargs):
     return displacements_smooth
 
 
-def stitch(sources, shape, positions, wobble, status, processes, verbose):
+def stitch(sources, shape0, positions, wobble, status, processes, verbose):
     if verbose:
         sys.stderr.write('Stitching: stitching wobbly layout\n')
     origin = origin_wobbly(positions, wobble)
-    shape = shape_wobbly(shape, positions, wobble)
+    shape = shape_wobbly(shape0, positions, wobble)
     coordinates = np.arange(origin[2], origin[2] + shape[2])
     layout_slices = []
     for i, c in enumerate(coordinates):
         s = []
         for so in sources:
-            if 0 <= c - so.position[2] < glb.SRC[
-                    so.source].shape[2] and so.status[c -
+            if 0 <= c - so.position[2] < shape0[2] and so.status[c -
                                                     so.position[2]] == S_VALID:
                 s.append(
                     Slice0(source=so.source,
