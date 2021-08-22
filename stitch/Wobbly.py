@@ -109,37 +109,31 @@ def shape_wobbly(shape, positions, wobble):
     ux = uy = float('-inf')
     sx, sy, sz = shape
     for (px, py, pz), w in zip(positions, wobble):
-        lx0, ly0 = np.min(w, axis=0) + [px, py]
-        ux0, uy0 = np.max(w, axis=0) + [px, py]
+        lx0, ly0 = np.min(w, axis=0)
+        ux0, uy0 = np.max(w, axis=0)
         lx = min(lx, lx0)
         ly = min(ly, ly0)
         ux = max(ux, ux0)
         uy = max(uy, uy0)        
     lz = min(p[2] for p in positions)
     uz = max(p[2] for p in positions)
+    lx = max(0, lx)
+    ly = max(0, ly)
+    lz = max(0, lz)
     return ux - lx + sx, uy - ly + sy, uz - lz + sz
 
 def origin_wobbly(positions, wobble):
-    x = y = 0
+    x = y = float('-inf')
     for (px, py, pz), w in zip(positions, wobble):
         x0, y0 = np.min(w, axis=0) + [px, py]
         x = min(x, x0)
         y = min(y, y0)
-    lz = min(p[2] for p in positions)
-    return x, y, x
+    z = min(p[2] for p in positions)
+    x = max(0, x)
+    y = max(0, y)
+    z = max(0, z)
+    return x, y, y
 
-
-def slice_along_axis_wobbly(sources, c):
-    s = []
-    for so in sources:
-        if 0 <= c - so.position[2] < glb.SRC[
-                so.source].shape[2] and so.status[c -
-                                                so.position[2]] == S_VALID:
-            s.append(
-                Slice0(source=so.source,
-                       coordinate=c - so.position[2],
-                       position=so._wobble[c - so.position[2]]))
-    return s
 
 def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
@@ -428,7 +422,7 @@ def place1(positions, positions_new, components, sources, smooth, processes,
         po = positions_optimized[i]
         start = positions[i][2]
         stop = start + glb.SRC[i].shape[2]
-        s._wobble[:] = po[start:stop]
+        s._wobble[:] = wobble[i][:] = po[start:stop]
         finite = np.all(np.isfinite(p[start:stop]), axis=1)
         non_finite = np.logical_not(finite)
         status[i][non_finite] = s.status[non_finite] = S_INVALID

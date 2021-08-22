@@ -110,7 +110,7 @@ wobble, status = stw.place1(positions,
                             processes=processes,
                             verbose=verbose)
 
-ux, uy, uz = stw.shape_wobbly(glb.SRC[0].shape, positions, wobble)
+ux, uy, uz = stw.shape_wobbly(glb.SRC[0].shape, positions, [s._wobble for s in sources])
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
