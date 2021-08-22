@@ -97,7 +97,7 @@ def fix_unaligned(status, displacements, qualities):
 
 def shape_wobbly(shape, positions, wobble):
     sx, sy, sz = shape
-    lx, ly = np.min(wobble, axis=(0, 1))    
+    lx, ly = np.min(wobble, axis=(0, 1))
     ux, uy = np.max(wobble, axis=(0, 1))
     lz = min(p[2] for p in positions)
     uz = max(p[2] for p in positions)
@@ -107,7 +107,7 @@ def shape_wobbly(shape, positions, wobble):
     return ux - lx + sx, uy - ly + sy, uz - lz + sz
 
 def origin_wobbly(positions, wobble):
-    x, y = np.min(wobble, axis=(0, 1))        
+    x, y = np.min(wobble, axis=(0, 1))
     z = min(p[2] for p in positions)
     return max(0, x), max(0, y), max(0, z)
 
@@ -726,14 +726,6 @@ def _split_region(r, o):
             split.append(glb.Overlap3(lower=l, upper=u))
     return split
 
-def _overlap1(region1, region2):
-    ovl = np.max([region1.lower, region2.lower], axis=0)
-    ovu = np.min([region1.upper, region2.upper], axis=0)
-
-    if np.any(ovu - ovl - 1 < 0):
-        return None
-    else:
-        return glb.Overlap2(lower=ovl, upper=ovu)
 
 def _add_overlap_region(regions, region):
     regsadd = [region]
@@ -744,8 +736,10 @@ def _add_overlap_region(regions, region):
         found = False
         for a in range(len(regsadd)):
             ra = regsadd[a]
-            ov = _overlap1(rc, ra)
-            if ov is not None:
+            ovl = np.max([rc.lower, ra.lower], axis=0)
+            ovu = np.min([rc.upper, ra.upper], axis=0)
+            if np.all(ovu - ovl - 1 >= 0):
+                ov = glb.Overlap2(ovl, ovu)
                 split = _split_region(rc, ov)
                 for s in split:
                     s.sources = rc.sources
