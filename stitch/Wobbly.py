@@ -356,27 +356,22 @@ def shifts_from_tracing(errors,
     return shifts, qualities, status
 
 
-def place0(pairs, positions, alignments, sources, min_quality, smooth,
-           smooth_optimized, processes, verbose):
-    smooth, smooth_optimized = [
-        dict(method=m) if isinstance(m, str) else m
-        for m in (smooth, smooth_optimized)
-    ]
-
+def place0(pairs, positions, displacements, qualities, status, smooth, min_quality,
+           processes, verbose):
     lo = min(p[2] for p in positions)
     hi = max(p[2] + glb.SRC[i].shape[2] for i, p in enumerate(positions))
     n_slices = hi - lo
     if verbose:
         sys.stderr.write('Placement: %d slices\n' % (n_slices))
     n_alignments = len(pairs)
-    displacements = np.full((n_slices, n_alignments, 2), np.nan)
-    qualities = np.full((n_slices, n_alignments), -np.inf)
-    status = np.full((n_slices, n_alignments), INVALID, dtype=int)
+    s_displacements = np.full((n_slices, n_alignments, 2), np.nan)
+    s_qualities = np.full((n_slices, n_alignments), -np.inf)
+    s_status = np.full((n_slices, n_alignments), INVALID, dtype=int)
     for k in range(n_alignments):
         i, j = pairs[k]
-        d = alignments[0][k] + positions[j][:2] - positions[i][:2]
-        q = alignments[1][k]
-        s = alignments[2][k]
+        d = displacements[k] + positions[j][:2] - positions[i][:2]
+        q = qualities[k]
+        s = status[k]
         fix_unaligned(s, d, q)
         l = max(positions[i][2], positions[j][2])
         u = min(positions[i][2] + glb.SRC[i].shape[2],
@@ -385,26 +380,26 @@ def place0(pairs, positions, alignments, sources, min_quality, smooth,
             valids = s >= VALID
             if min_quality:
                 valids = np.logical_and(valids, q > min_quality)
-            displacements[l:u, k] = smooth_displacements(d, valids, **smooth)
+            s_displacements[l:u, k] = smooth_displacements(d, valids, **smooth)
         else:
-            displacements[l:u, k] = d
-        qualities[l:u, k] = q
-        status[l:u, k] = s
+            s_displacements[l:u, k] = d
+        s_qualities[l:u, k] = q
+        s_status[l:u, k] = s
     f = ft.partial(place_slice,
                    positions=[p[:2] for p in positions],
                    alignment_pairs=pairs,
                    min_quality=min_quality)
     if processes == 'serial':
         results = [
-            f(d, q, s) for d, q, s in zip(displacements, qualities, status)
+            f(d, q, s) for d, q, s in zip(s_displacements, s_qualities, s_status)
         ]
     else:
         with mp.Pool(processes) as e:
-            results = e.starmap(f, zip(displacements, qualities, status))
+            results = e.starmap(f, zip(s_displacements, s_qualities, s_status))
     return zip(*results)
 
-def place1(positions_new, components, pairs, positions, alignments, sources, min_quality, smooth,
-           smooth_optimized, processes, verbose):
+def place1(positions_new, components, sources,
+           smooth, processes, verbose):
     positions_new = np.array(positions_new)
     for s, components_slice in enumerate(components):
         for c in components_slice:
@@ -419,10 +414,10 @@ def place1(positions_new, components, pairs, positions, alignments, sources, min
                                                     processes=processes,
                                                     verbose=verbose)
     positions_optimized = positions_optimized.swapaxes(0, 1)
-    if smooth_optimized:
+    if smooth:
         for p in positions_optimized:
             valids = np.all(np.isfinite(p), axis=1)
-            p[:] = smooth_positions(p, valids=valids, **smooth_optimized)
+            p[:] = smooth_positions(p, valids=valids, **smooth)
     positions_optimized_valid = np.ma.masked_invalid(positions_optimized)
     min_pos = np.array(
         np.min(np.min(positions_optimized_valid, axis=0), axis=0))
