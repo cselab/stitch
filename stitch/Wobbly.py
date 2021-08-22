@@ -792,7 +792,7 @@ def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
         if np.all([u > l for u, l in zip(r.upper, r.lower)]):
             new_regions.append(r)
     regions = new_regions
-     new_regions = []
+    new_regions = []
     ps = np.array(layout.origin, dtype=int) + shape
     for i, r in enumerate(regions):
         r.lower = tuple(p if l > p else l for l, p in zip(r.lower, ps))
