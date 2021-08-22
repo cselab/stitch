@@ -355,8 +355,8 @@ def shifts_from_tracing(errors,
     return shifts, qualities, status
 
 
-def place0(pairs, positions, displacements, qualities, status, smooth, min_quality,
-           processes, verbose):
+def place0(pairs, positions, displacements, qualities, status, smooth,
+           min_quality, processes, verbose):
     lo = min(p[2] for p in positions)
     hi = max(p[2] + glb.SRC[i].shape[2] for i, p in enumerate(positions))
     n_slices = hi - lo
@@ -390,15 +390,26 @@ def place0(pairs, positions, displacements, qualities, status, smooth, min_quali
                    min_quality=min_quality)
     if processes == 'serial':
         results = [
-            f(d, q, s) for d, q, s in zip(s_displacements, s_qualities, s_status)
+            f(d, q, s)
+            for d, q, s in zip(s_displacements, s_qualities, s_status)
         ]
     else:
         with mp.Pool(processes) as e:
             results = e.starmap(f, zip(s_displacements, s_qualities, s_status))
     return zip(*results)
 
-def place1(positions, positions_new, components, sources,
-           smooth, processes, verbose):
+
+def place1(positions, positions_new, components, sources, smooth, processes,
+           verbose):
+    n_sources = len(positions)
+    status = [
+        np.zeros((glb.SRC[i].shape[2], 2), dtype=int) for i in range(n_sources)
+    ]
+    wobble = [
+        np.full(glb.SRC[i].shape[2], S_VALID, dtype=int)
+        for i in range(n_sources)
+    ]
+
     positions_new = np.array(positions_new)
     for s, components_slice in enumerate(components):
         for c in components_slice:
@@ -406,7 +417,8 @@ def place1(positions, positions_new, components, sources,
                 i = c[0]
                 so = sources[i]
                 if 0 <= s - positions[i][2] < glb.SRC[i].shape[2]:
-                    so.status[s - positions[i][2]] = S_ISOLATED
+                    z = s - positions[i][2]
+                    status[i][z] = so.status[z] = S_ISOLATED
     components = [[c for c in components_slice if len(c) > 1]
                   for components_slice in components]
     positions_optimized = _optimize_slice_positions(positions_new,
@@ -422,22 +434,24 @@ def place1(positions, positions_new, components, sources,
     min_pos = np.array(
         np.min(np.min(positions_optimized_valid, axis=0), axis=0))
     positions_optimized -= min_pos
-    for s, p in zip(sources, positions_optimized):
-        start = s.position[2]
-        stop = start + glb.SRC[s.source].shape[2]
-        s._wobble[:] = p[start:stop]
+    for i in range(n_sources):
+        s = sources[i]
+        po = positions_optimized[i]
+        start = positions[i][2]
+        stop = start + glb.SRC[i].shape[2]
+        s._wobble[:] = po[start:stop]
         finite = np.all(np.isfinite(p[start:stop]), axis=1)
         non_finite = np.logical_not(finite)
-        s.status[non_finite] = S_INVALID
-        
+        status[i][non_finite] = s.status[non_finite] = S_INVALID
+    return status, wobble
 
 
 def place_slice(displacements,
-                 qualities,
-                 status,
-                 positions,
-                 alignment_pairs,
-                 min_quality=-np.inf):
+                qualities,
+                status,
+                positions,
+                alignment_pairs,
+                min_quality=-np.inf):
     positions = positions[:]
     n_sources = len(positions)
     g = union_find.union_find(n_sources)
@@ -534,8 +548,8 @@ def _cluster_components(components):
 
 def _optimize_slice_positions(positions,
                               components,
-                              processes=None,
-                              verbose=False):
+                              processes,
+                              verbose):
     n_slices = len(components)
     ndim = len(positions[0, 0])
     cluster_components, si_to_c, c_to_si = _cluster_components(components)

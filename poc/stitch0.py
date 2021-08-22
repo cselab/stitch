@@ -52,10 +52,11 @@ for x in range(tx):
             pairs.append((i, (x + 1) * ty + y))
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
-src = tuple(
-    np.memmap(os.path.join(di, e), dtype, 'r', 0, (kx, ky, kz), order='F')
-    for e in path)
-glb.SRC[:] = src[:]
+glb.SRC[:] = (np.memmap(os.path.join(di, e),
+                        dtype,
+                        'r',
+                        0, (kx, ky, kz),
+                        order='F') for e in path)
 sources = tuple(
     stw.WobblySource(i, p, tile_position=t)
     for i, (p, t) in enumerate(zip(positions, tile_positions)))
@@ -86,23 +87,28 @@ displacements, qualities, status = stw.align(
     processes=processes,
     verbose=verbose)
 positions_new, components = stw.place0(pairs,
-                                   positions, displacements, qualities, status,
-                                   smooth=dict(method='window',
-                                               window='hamming',
-                                               window_length=100,
-                                               binary=None),
-                                   min_quality=-np.inf,
-                                   processes=processes,
-                                   verbose=verbose)
+                                       positions,
+                                       displacements,
+                                       qualities,
+                                       status,
+                                       smooth=dict(method='window',
+                                                   window='hamming',
+                                                   window_length=100,
+                                                   binary=None),
+                                       min_quality=-np.inf,
+                                       processes=processes,
+                                       verbose=verbose)
 
-stw.place1(positions, positions_new, components,
-           sources,
-           smooth=dict(method='window',
-                       window='bartlett',
-                       window_length=20,
-                       binary=10),
-           processes=processes,
-           verbose=verbose)
+wobble, status = stw.place1(positions,
+                            positions_new,
+                            components,
+                            sources,
+                            smooth=dict(method='window',
+                                        window='bartlett',
+                                        window_length=20,
+                                        binary=10),
+                            processes=processes,
+                            verbose=verbose)
 
 ux, uy, uz = stw.shape_wobbly(sources)
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
