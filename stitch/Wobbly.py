@@ -105,16 +105,9 @@ def fix_unaligned(status, displacements, qualities):
 
 
 def shape_wobbly(shape, positions, wobble):
-    lx = ly = 0
-    ux = uy = float('-inf')
     sx, sy, sz = shape
-    for (px, py, pz), w in zip(positions, wobble):
-        lx0, ly0 = np.min(w, axis=0)
-        ux0, uy0 = np.max(w, axis=0)
-        lx = min(lx, lx0)
-        ly = min(ly, ly0)
-        ux = max(ux, ux0)
-        uy = max(uy, uy0)        
+    lx, ly = np.min(wobble, axis=(0, 1))    
+    ux, uy = np.max(wobble, axis=(0, 1))
     lz = min(p[2] for p in positions)
     uz = max(p[2] for p in positions)
     lx = max(0, lx)
@@ -123,11 +116,7 @@ def shape_wobbly(shape, positions, wobble):
     return ux - lx + sx, uy - ly + sy, uz - lz + sz
 
 def origin_wobbly(positions, wobble):
-    x = y = float('-inf')
-    for (px, py, pz), w in zip(positions, wobble):
-        x0, y0 = np.min(w, axis=0)
-        x = min(x, x0)
-        y = min(y, y0)
+    x, y = np.min(wobble, axis=(0, 1))        
     z = min(p[2] for p in positions)
     return max(0, x), max(0, y), max(0, z)
 
