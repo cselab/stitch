@@ -129,18 +129,17 @@ def origin_wobbly(positions, wobble):
     return x, y, x
 
 
-def slice_along_axis_wobbly(sources, coordinate):
-    sliced_sources = []
-    for s in sources:
-        if 0 <= coordinate - s.position[2] < glb.SRC[
-                s.source].shape[2] and s.status[coordinate -
-                                                s.position[2]] == S_VALID:
-            position = s._wobble[coordinate - s.position[2]]
-            sliced_sources.append(
-                Slice0(source=s.source,
-                       coordinate=coordinate - s.position[2],
-                       position=position))
-    return sliced_sources
+def slice_along_axis_wobbly(sources, c):
+    s = []
+    for so in sources:
+        if 0 <= c - so.position[2] < glb.SRC[
+                so.source].shape[2] and so.status[c -
+                                                so.position[2]] == S_VALID:
+            s.append(
+                Slice0(source=so.source,
+                       coordinate=c - so.position[2],
+                       position=so._wobble[c - so.position[2]]))
+    return s
 
 def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
@@ -719,7 +718,15 @@ def stitch(sources, shape, positions, wobble, status, processes, verbose):
     coordinates = np.arange(origin[2], origin[2] + shape[2])
     layout_slices = []
     for i, c in enumerate(coordinates):
-        s = slice_along_axis_wobbly(sources, c)
+        s = []
+        for so in sources:
+            if 0 <= c - so.position[2] < glb.SRC[
+                    so.source].shape[2] and so.status[c -
+                                                    so.position[2]] == S_VALID:
+                s.append(
+                    Slice0(source=so.source,
+                           coordinate=c - so.position[2],
+                           position=so._wobble[c - so.position[2]]))
         if s:
             layout_slices.append((i, Layout1(sources=s)))
     if verbose:
