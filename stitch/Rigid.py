@@ -122,8 +122,8 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
         return (shift[0], 0, shift[1]), quality
 
 
-def align(pairs, positions, tile_position, depth, max_shifts, clip, background, processes,
-          verbose):
+def align(pairs, positions, tile_position, depth, max_shifts, clip, background,
+          processes, verbose):
     f = ft.partial(align_pair,
                    depth=depth,
                    max_shifts=max_shifts,

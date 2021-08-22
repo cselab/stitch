@@ -57,36 +57,36 @@ src = tuple(
     for e in path)
 glb.SRC[:] = src[:]
 sources = tuple(
-    glb.WobblySource(i, p, tile_position=t)
+    stw.WobblySource(i, p, tile_position=t)
     for i, (p, t) in enumerate(zip(positions, tile_positions)))
 shifts, qualities = st.align(pairs,
-                   positions,
-                   tile_positions,
-                   depth=[434 // sx, 425 // sy, None],
-                   max_shifts=[(-80 // sx, 80 // sx), (-80 // sy, 80 // sy),
-                               (-120 // sz, 120 // sz)],
-                   background=(100, 120),
-                   clip=25000,
-                   processes=processes,
-                   verbose=verbose)
+                             positions,
+                             tile_positions,
+                             depth=[434 // sx, 425 // sy, None],
+                             max_shifts=[(-80 // sx, 80 // sx),
+                                         (-80 // sy, 80 // sy),
+                                         (-120 // sz, 120 // sz)],
+                             background=(100, 120),
+                             clip=25000,
+                             processes=processes,
+                             verbose=verbose)
 
 displacements = []
 for (i, j), shift, in zip(pairs, shifts):
     displacements.append(
-        tuple(q + s - p for p, q, s in zip(positions[i],
-                                           positions[j], shift)))
+        tuple(q + s - p for p, q, s in zip(positions[i], positions[j], shift)))
 
 positions = st.place(pairs, sources, displacements)
-displacements, qualities, status = stw.align(pairs,
-          positions,
-          max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
-          prepare=True,
-          find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
-          processes=processes,
-          verbose=verbose)
+displacements, qualities, status = stw.align(
+    pairs,
+    positions,
+    max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
+    prepare=True,
+    find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
+    processes=processes,
+    verbose=verbose)
 stw.place(pairs,
-          positions,
-          (displacements, qualities, status),
+          positions, (displacements, qualities, status),
           sources,
           min_quality=-np.inf,
           smooth=dict(method='window',
