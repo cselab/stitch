@@ -444,36 +444,32 @@ def _place_slice_component(positions, pairs, displacements):
     index_to_node = {i: n for n, i in enumerate(node_to_index)}
     nnodes = len(node_to_index)
 
-    ndim = len(positions[0])
-    n = ndim * nalignments
-    m = ndim * (nnodes - 1)
-    s = np.zeros(n)
-    k = 0
-    for a, sh in zip(pairs, displacements):
-        for d in range(ndim):
-            s[k] = sh[d]
-            k = k + 1
+    n = 2 * nalignments
+    m = 2 * (nnodes - 1)
+    s = [ ]
+    for d in displacements:
+        s.extend(d)
     M = np.zeros((n, m))
     k = 0
-    for a in pairs:
-        pre_node = index_to_node[a[0]]
-        post_node = index_to_node[a[1]]
-        for d in range(ndim):
+    for i, j in pairs:
+        pre_node = index_to_node[i]
+        post_node = index_to_node[j]
+        for d in range(2):
             if pre_node > 0:
-                M[k, (pre_node - 1) * ndim + d] = -1
+                M[k, (pre_node - 1) * 2 + d] = -1
             if post_node > 0:
-                M[k, (post_node - 1) * ndim + d] = 1
+                M[k, (post_node - 1) * 2 + d] = 1
             k = k + 1
-    positions_optimized = np.dot(np.linalg.pinv(M), s)
-    positions_optimized = np.hstack([np.zeros(ndim), positions_optimized])
-    positions_optimized = np.reshape(positions_optimized, (-1, ndim))
-    positions_optimized = np.asarray(np.round(positions_optimized), dtype=int)
+    pos = np.dot(np.linalg.pinv(M), s)
+    pos = np.hstack([np.zeros(2), pos])
+    pos = np.reshape(pos, (-1, 2))
+    pos = np.asarray(np.round(pos), dtype=int)
     fixed_id = np.min(pairs)
     fixed_position = positions[fixed_id]
-    positions_optimized = positions_optimized - positions_optimized[
+    pos = pos - pos[
         index_to_node[fixed_id]] + fixed_position
     for i, j in enumerate(node_to_index):
-        positions[j] = positions_optimized[i]
+        positions[j] = pos[i]
 
 
 def _cluster_components(components):
