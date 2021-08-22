@@ -363,8 +363,7 @@ def place(pairs, alignments, sources, min_quality, smooth, smooth_optimized,
     n_slices = hi - lo
     if verbose:
         sys.stderr.write('Placement: %d slices\n' % (n_slices))
-    positions = np.array(
-        [s.position[:2] for s in sources])
+    positions = [s.position[:2] for s in sources]
     n_alignments = len(pairs)
     displacements = np.full((n_slices, n_alignments, 2), np.nan)
     qualities = np.full((n_slices, n_alignments), -np.inf)
@@ -385,18 +384,18 @@ def place(pairs, alignments, sources, min_quality, smooth, smooth_optimized,
             displacements[l:u, k] = a.displacements
         qualities[l:u, k] = a.qualities
         status[l:u, k] = a.status
-    _place = ft.partial(_place_slice,
-                        positions=positions,
-                        alignment_pairs=pairs,
-                        min_quality=min_quality)
+    f = ft.partial(_place_slice,
+                   positions=positions,
+                   alignment_pairs=pairs,
+                   min_quality=min_quality)
     if processes == 'serial':
         results = [
-            _place(d, q, s)
+            f(d, q, s)
             for d, q, s in zip(displacements, qualities, status)
         ]
     else:
         with mp.Pool(processes) as e:
-            results = e.starmap(_place, zip(displacements, qualities, status))
+            results = e.starmap(f, zip(displacements, qualities, status))
     positions_new = np.array([r[0] for r in results])
     components = [r[1] for r in results]
     for s, components_slice in enumerate(components):
@@ -433,7 +432,7 @@ def _place_slice(displacements,
                  positions,
                  alignment_pairs,
                  min_quality=-np.inf):
-    positions = positions.copy()
+    positions = positions[:]
     n_sources = len(positions)
     g = union_find.union_find(n_sources)
     for s, q, a in zip(status, qualities, alignment_pairs):
@@ -498,7 +497,8 @@ def _place_slice_component(positions,
     fixed_position = positions[fixed_id]
     positions_optimized = positions_optimized - positions_optimized[
         index_to_node[fixed_id]] + fixed_position
-    positions[node_to_index] = positions_optimized
+    for i, j in enumerate(node_to_index):
+        positions[j] = positions_optimized[i]
 
 
 def _cluster_components(components):
