@@ -109,33 +109,32 @@ def lower_wobbly0(_wobble, position):
     return wobble_min[0], wobble_min[1], position[2]
 
 
-def upper_wobbly0(_wobble, position, source):
+def upper_wobbly0(_wobble, position, shape):
     wobble_max = np.max(_wobble, axis=0)
     position = wobble_max[0], wobble_max[1], position[2]
-    shape = glb.SRC[source].shape
     return tuple(p + s for p, s in zip(position, shape))
 
 
-def lower_wobbly(sources):
+def lower_wobbly(position, wobble):
     return tuple(
-        np.min([lower_wobbly0(s._wobble, s.position) for s in sources],
+        np.min([lower_wobbly0(w, p) for (w, p) in zip(wobble, position)],
                axis=0))
 
 
-def upper_wobbly(sources):
+def upper_wobbly(shape, positions, wobble):
     return tuple(
         np.max(
-            [upper_wobbly0(s._wobble, s.position, s.source) for s in sources],
+            [upper_wobbly0(w, p, shape) for (w, p) in zip(wobble, positions)],
             axis=0))
 
 
-def origin_wobbly(sources):
-    return tuple(min(p, 0) for p in lower_wobbly(sources))
+def origin_wobbly(position, wobble):
+    return tuple(min(p, 0) for p in lower_wobbly(position, wobble))
 
 
-def shape_wobbly(sources):
+def shape_wobbly(sources, shape, position, wobble):
     return tuple(
-        u - o for u, o in zip(upper_wobbly(sources), origin_wobbly(sources)))
+        u - o for u, o in zip(upper_wobbly(shape, position, wobble), origin_wobbly(position, wobble)))
 
 
 def slice_along_axis_wobbly(sources, coordinate):
@@ -721,11 +720,11 @@ def smooth_displacements(displacements, valids, method='window', **kwargs):
     return displacements_smooth
 
 
-def stitch(sources, processes, verbose):
+def stitch(sources, shape, positions, wobble, processes, verbose):
     if verbose:
         sys.stderr.write('Stitching: stitching wobbly layout\n')
-    origin = origin_wobbly(sources)
-    shape = shape_wobbly(sources)
+    origin = origin_wobbly(positions, wobble)
+    shape = shape_wobbly(sources, shape, positions, wobble)
     coordinates = np.arange(origin[2], origin[2] + shape[2])
     layout_slices = []
     for i, c in enumerate(coordinates):

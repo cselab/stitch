@@ -110,11 +110,11 @@ wobble, status = stw.place1(positions,
                             processes=processes,
                             verbose=verbose)
 
-ux, uy, uz = stw.shape_wobbly(sources)
+ux, uy, uz = stw.shape_wobbly(sources, glb.SRC[0].shape, positions, wobble)
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-stw.stitch(sources, processes, verbose=verbose)
+stw.stitch(sources, glb.SRC[0].shape, positions, wobble, processes, verbose=verbose)
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))
