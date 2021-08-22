@@ -723,9 +723,7 @@ def stitch(sources, shape0, positions, wobble, status, processes, verbose):
             z = c - positions[j][2]
             if 0 <= z < shape0[2] and status[j][z] == S_VALID:
                 s.append(
-                    Slice0(source=so.source,
-                           coordinate=z,
-                           position=so._wobble[z]))
+                    Slice0(j, z, so._wobble[z]))
         if s:
             layout_slices.append((i, Layout1(sources=s)))
     if verbose:
