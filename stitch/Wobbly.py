@@ -365,8 +365,7 @@ def place(pairs, alignments, sources, min_quality, smooth, smooth_optimized,
         sys.stderr.write('Placement: %d slices\n' % (n_slices))
     positions = np.array(
         [s.position[:2] for s in sources])
-    alignment_pairs = np.array(pairs)
-    n_alignments = len(alignment_pairs)
+    n_alignments = len(pairs)
     displacements = np.full((n_slices, n_alignments, 2), np.nan)
     qualities = np.full((n_slices, n_alignments), -np.inf)
     status = np.full((n_slices, n_alignments), INVALID, dtype=int)
@@ -388,7 +387,7 @@ def place(pairs, alignments, sources, min_quality, smooth, smooth_optimized,
         status[l:u, k] = a.status
     _place = ft.partial(_place_slice,
                         positions=positions,
-                        alignment_pairs=alignment_pairs,
+                        alignment_pairs=pairs,
                         min_quality=min_quality)
     if processes == 'serial':
         results = [
@@ -434,27 +433,20 @@ def _place_slice(displacements,
                  positions,
                  alignment_pairs,
                  min_quality=-np.inf):
-
     positions = positions.copy()
-    valid = status >= VALID
-    if min_quality:
-        valid = np.logical_and(valid, qualities > min_quality)
-
-    alignment_pairs = alignment_pairs[valid]
-    displacements = displacements[valid]
-    qualities = qualities[valid]
     n_sources = len(positions)
     g = union_find.union_find(n_sources)
-    for a in alignment_pairs:
-        g.union(a[0], a[1])
+    for s, q, a in zip(status, qualities, alignment_pairs):
+        if s >= VALID and q > min_quality:
+            g.union(a[0], a[1])
     component_ids = g.components()
     component_pairs = []
     component_displacements = []
     for ids in component_ids:
         pairs = []
         displ = []
-        for a, d in zip(alignment_pairs, displacements):
-            if a[0] in ids:
+        for s, q, a, d in zip(status, qualities, alignment_pairs, displacements):
+            if s >= VALID and q > min_quality and a[0] in ids:
                 pairs.append(a)
                 displ.append(d)
         component_pairs.append(pairs)
