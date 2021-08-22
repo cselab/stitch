@@ -104,37 +104,29 @@ def fix_unaligned(status, displacements, qualities):
             status[s:e] = FIXED
 
 
-def lower_wobbly0(_wobble, position):
-    wobble_min = np.min(_wobble, axis=0)
-    return wobble_min[0], wobble_min[1], position[2]
+def shape_wobbly(shape, positions, wobble):
+    lx = ly = 0
+    ux = uy = float('-inf')
+    sx, sy, sz = shape
+    for (px, py, pz), w in zip(positions, wobble):
+        lx0, ly0 = np.min(w, axis=0) + [px, py]
+        ux0, uy0 = np.max(w, axis=0) + [px, py]
+        lx = min(lx, lx0)
+        ly = min(ly, ly0)
+        ux = max(ux, ux0)
+        uy = max(uy, uy0)        
+    lz = min(p[2] for p in positions)
+    uz = max(p[2] for p in positions)
+    return ux - lx + sx, uy - ly + sy, uz - lz + sz
 
-
-def upper_wobbly0(_wobble, position, shape):
-    wobble_max = np.max(_wobble, axis=0)
-    position = wobble_max[0], wobble_max[1], position[2]
-    return tuple(p + s for p, s in zip(position, shape))
-
-
-def lower_wobbly(position, wobble):
-    return tuple(
-        np.min([lower_wobbly0(w, p) for (w, p) in zip(wobble, position)],
-               axis=0))
-
-
-def upper_wobbly(shape, positions, wobble):
-    return tuple(
-        np.max(
-            [upper_wobbly0(w, p, shape) for (w, p) in zip(wobble, positions)],
-            axis=0))
-
-
-def origin_wobbly(position, wobble):
-    return tuple(min(p, 0) for p in lower_wobbly(position, wobble))
-
-
-def shape_wobbly(sources, shape, position, wobble):
-    return tuple(
-        u - o for u, o in zip(upper_wobbly(shape, position, wobble), origin_wobbly(position, wobble)))
+def origin_wobbly(positions, wobble):
+    x = y = 0
+    for (px, py, pz), w in zip(positions, wobble):
+        x0, y0 = np.min(w, axis=0) + [px, py]
+        x = min(x, x0)
+        y = min(y, y0)
+    lz = min(p[2] for p in positions)
+    return x, y, x
 
 
 def slice_along_axis_wobbly(sources, coordinate):
@@ -149,7 +141,6 @@ def slice_along_axis_wobbly(sources, coordinate):
                        coordinate=coordinate - s.position[2],
                        position=position))
     return sliced_sources
-
 
 def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
@@ -720,11 +711,11 @@ def smooth_displacements(displacements, valids, method='window', **kwargs):
     return displacements_smooth
 
 
-def stitch(sources, shape, positions, wobble, processes, verbose):
+def stitch(sources, shape, positions, wobble, status, processes, verbose):
     if verbose:
         sys.stderr.write('Stitching: stitching wobbly layout\n')
     origin = origin_wobbly(positions, wobble)
-    shape = shape_wobbly(sources, shape, positions, wobble)
+    shape = shape_wobbly(shape, positions, wobble)
     coordinates = np.arange(origin[2], origin[2] + shape[2])
     layout_slices = []
     for i, c in enumerate(coordinates):
