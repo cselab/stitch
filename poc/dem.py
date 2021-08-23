@@ -8,7 +8,7 @@ import sys
 import stitch.glb as glb
 import glob
 
-me = "stitch0.py"
+me = "dem.py"
 verbose = True
 dtype = np.dtype("<u2")
 processes = multiprocessing.cpu_count()
@@ -18,10 +18,8 @@ nx, ny, nz = 2048, 2048, 4299
 sx, sy, sz = 8, 8, 8
 di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
 X = glob.glob(di+'*640*.raw')
-ending = np.zeros((len(X),))
-for j,filename in enumerate(X):
-  ending[j] = np.double(filename[-6:-4])
-indices = np.flip(np.argsort(ending))
+ending = [int(filename[-6:-4]) for filename in X]
+indices = np.argsort(ending)
 path = tuple([X[indices[i]] for i in range(len(indices))])
 for i in path:
     print(i)
