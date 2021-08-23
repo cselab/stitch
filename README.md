@@ -15,12 +15,18 @@ $ python -m pip install numpy scipy scikit-image
 
 <h2>Getting started</h2>
 
-Generate fake data
+Generate four files with fake input
 <pre>
 $ (cd tool && make)
-c99 gen.c -Ofast -g  -lm -o gen
 $ ./tool/gen -n 200 200 200 -o 10 10
+$ ls *.raw -1
+200x200le.00.00.raw
+200x200le.00.01.raw
+200x200le.01.00.raw
+200x200le.01.01.raw
 </pre>
+
+<p align="center"><img src="img/input.png" alt="fake input"/></p>
 
 stitch
 <pre>
