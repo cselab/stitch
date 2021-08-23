@@ -13,6 +13,25 @@ $ python -m pip install numpy scipy scikit-image
 
 <a href="https://imagej.nih.gov">ImageJ</a>
 
+<h2>Getting started</h2>
+
+Generate fake data
+<pre>
+$ (cd tool && make)
+c99 gen.c -Ofast -g  -lm -o gen
+$ ./tool/gen -n 200 200 200 -o 10 10
+</pre>
+
+stitch
+<pre>
+$ python3 main.py
+main.py: processes = 4
+47% 390x390x200le.raw
+</pre>
+
+Open <tt>390x390x200le.raw</tt> in ImageJ.
+
+<p align="center"><img src="img/sample.png" alt="sample output"/></p>
 
 <h2>References</h2>
 
