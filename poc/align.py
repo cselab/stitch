@@ -82,4 +82,3 @@ displacements, qualities, status = stw.align(
 
 for d in displacements:
     sys.stderr.write("%.2f %.2f\n" % (np.mean(d), np.std(d)))
-    

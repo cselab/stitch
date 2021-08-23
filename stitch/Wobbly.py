@@ -47,6 +47,7 @@ S_ISOLATED = -2
 S_INVALID = -1
 S_VALID = 0
 
+
 def fix_unaligned(status, displacements, qualities):
     n_status = len(status)
     unaligned = np.array(status == UNALIGNED, dtype=int)
@@ -106,6 +107,7 @@ def shape_wobbly(shape, positions, wobble):
     lz = max(0, lz)
     return ux - lx + sx, uy - ly + sy, uz - lz + sz
 
+
 def origin_wobbly(positions, wobble):
     x, y = np.min(wobble, axis=(0, 1))
     z = min(p[2] for p in positions)
@@ -116,6 +118,7 @@ def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
     if verbose:
         sys.stderr.write('Wobbly: start align')
+
     def a2arg(i, j):
         return i, positions[i], j, positions[j]
 
@@ -360,15 +363,14 @@ def place0(pairs, positions, displacements, qualities, status, smooth,
     return zip(*results)
 
 
-def place1(positions, positions_new, components, smooth, processes,
-           verbose):
+def place1(positions, positions_new, components, smooth, processes, verbose):
     n_sources = len(positions)
     wobble = [
-        np.zeros((glb.SRC[i].shape[2], 2), dtype=int)
-        for i in range(n_sources)
+        np.zeros((glb.SRC[i].shape[2], 2), dtype=int) for i in range(n_sources)
     ]
     status = [
-        np.full(glb.SRC[i].shape[2], S_VALID, dtype=int) for i in range(n_sources)
+        np.full(glb.SRC[i].shape[2], S_VALID, dtype=int)
+        for i in range(n_sources)
     ]
 
     positions_new = np.array(positions_new)
@@ -449,7 +451,7 @@ def _place_slice_component(positions, pairs, displacements):
 
     n = 2 * nalignments
     m = 2 * (nnodes - 1)
-    s = [ ]
+    s = []
     for d in displacements:
         s.extend(d)
     M = np.zeros((n, m))
@@ -469,8 +471,7 @@ def _place_slice_component(positions, pairs, displacements):
     pos = np.asarray(np.round(pos), dtype=int)
     fixed_id = np.min(pairs)
     fixed_position = positions[fixed_id]
-    pos = pos - pos[
-        index_to_node[fixed_id]] + fixed_position
+    pos = pos - pos[index_to_node[fixed_id]] + fixed_position
     for i, j in enumerate(node_to_index):
         positions[j] = pos[i]
 
@@ -501,10 +502,7 @@ def _cluster_components(components):
     return components_full, is_to_c, c_to_si
 
 
-def _optimize_slice_positions(positions,
-                              components,
-                              processes,
-                              verbose):
+def _optimize_slice_positions(positions, components, processes, verbose):
     n_slices = len(components)
     ndim = len(positions[0, 0])
     cluster_components, si_to_c, c_to_si = _cluster_components(components)
@@ -688,8 +686,7 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
         for j, p in enumerate(positions):
             z = c - p[2]
             if 0 <= z < shape0[2] and status[j][z] == S_VALID:
-                s.append(
-                    Slice0(j, z, wobble[j][z]))
+                s.append(Slice0(j, z, wobble[j][z]))
         if s:
             layout_slices.append((i, Layout1(sources=s)))
     if verbose:
@@ -759,6 +756,7 @@ def _add_overlap_region(regions, region):
     regsnew = regsnew + regscheck + regsadd
     return regsnew
 
+
 def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
     if verbose and slice_id % 100 == 0:
         sys.stderr.write('Stitching: slice %d\n' % slice_id)
@@ -780,8 +778,10 @@ def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
     shape = tuple(max(s, 0) for s in layout.shape)
     new_regions = []
     for i, r in enumerate(regions):
-        r.lower = tuple(p if l < p else l for l, p in zip(r.lower, layout.origin))
-        r.upper = tuple(p if u < p else u for u, p in zip(r.upper, layout.origin))
+        r.lower = tuple(p if l < p else l
+                        for l, p in zip(r.lower, layout.origin))
+        r.upper = tuple(p if u < p else u
+                        for u, p in zip(r.upper, layout.origin))
         if np.all([u > l for u, l in zip(r.upper, r.lower)]):
             new_regions.append(r)
     regions = new_regions

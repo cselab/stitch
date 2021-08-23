@@ -1,34 +1,35 @@
-import stitch.Rigid as st
-import stitch.Wobbly as stw
+import glob
 import mmap
 import multiprocessing
 import numpy as np
 import os
-import sys
 import stitch.glb as glb
-import glob
+import stitch.Rigid as st
+import stitch.Wobbly as stw
+import sys
 
 me = "dem.py"
 verbose = True
 dtype = np.dtype("<u2")
-processes = multiprocessing.cpu_count()
+processes = 22
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 tx, ty = 3, 5
 nx, ny, nz = 2048, 2048, 4299
-sx, sy, sz = 1, 1, 1
+sx = sy = sz = 2
 di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
-path = glob.glob(di+'*640*.raw')
+path = glob.glob(di + '*640*.raw')
+
+
 def key(f):
     x = f.split('_')[-7][1:]
     y = f.split('_')[-6][1:]
     return -int(x), -int(y)
+
+
 path.sort(key=key)
 for p in path:
     print(p)
-glb.SRC[:] = (np.memmap(e,
-                        dtype,
-                        'r',
-                        0, (nx, ny, nz),
+glb.SRC[:] = (np.memmap(e, dtype, 'r', 0, (nx, ny, nz),
                         order='F')[::sx, ::sy, ::sz] for e in path)
 kx, ky, kz = glb.SRC[0].shape
 ox = 434 // sx
@@ -92,7 +93,12 @@ ux, uy, uz = stw.shape_wobbly(glb.SRC[0].shape, positions, wobble)
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-stw.stitch(glb.SRC[0].shape, positions, wobble, status, processes, verbose=verbose)
+stw.stitch(glb.SRC[0].shape,
+           positions,
+           wobble,
+           status,
+           processes,
+           verbose=verbose)
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))
