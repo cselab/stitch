@@ -102,3 +102,6 @@ stw.stitch(glb.SRC[0].shape,
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))
+
+#import poc.pgm
+#poc.pgm.pgm("a.pgm", sink[:, :, uz//2])
