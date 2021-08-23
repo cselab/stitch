@@ -17,10 +17,10 @@ tx, ty = 2, 2
 nx, ny, nz = 200, 200, 200
 sx = sy = sz = 1
 path = (
-    '200x200le.00.00.raw',
-    '200x200le.00.01.raw',
-    '200x200le.01.00.raw',
-    '200x200le.01.01.raw',
+    '200x200x200le.00.00.raw',
+    '200x200x200le.00.01.raw',
+    '200x200x200le.01.00.raw',
+    '200x200x200le.01.01.raw',
 )
 glb.SRC[:] = (np.memmap(e, dtype, 'r', 0, (nx, ny, nz),
                         order='F')[::sx, ::sy, ::sz] for e in path)

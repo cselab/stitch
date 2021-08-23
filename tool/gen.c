@@ -155,8 +155,8 @@ main(int argc, char **argv)
     scale = 1.0 / (tx * (nx - overlap[X]));
     for (x = 0; x < tx; x++)
         for (y = 0; y < ty; y++) {
-            snprintf(raw_path, sizeof raw_path, "%s/%dx%dle.%02d.%02d.raw",
-                     directory, nx, ny, x, y);
+            snprintf(raw_path, sizeof raw_path, "%s/%dx%dx%dle.%02d.%02d.raw",
+                     directory, nx, ny, nz, x, y);
             if ((file = fopen(raw_path, "w")) == NULL) {
                 fprintf(stderr, "%s: fail to wirte '%s'\n", me, raw_path);
                 exit(2);

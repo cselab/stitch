@@ -19,11 +19,11 @@ Generate four files with fake input
 <pre>
 $ (cd tool && make)
 $ ./tool/gen -n 200 200 200 -o 10 10
-$ ls *.raw -1
-200x200le.00.00.raw
-200x200le.00.01.raw
-200x200le.01.00.raw
-200x200le.01.01.raw
+$ ls -1 *.raw
+200x200x200le.00.00.raw
+200x200x200le.00.01.raw
+200x200x200le.01.00.raw
+200x200x200le.01.01.raw
 </pre>
 
 <p align="center"><img src="img/input.png" alt="fake input"/></p>
