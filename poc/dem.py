@@ -6,36 +6,30 @@ import numpy as np
 import os
 import sys
 import stitch.glb as glb
+import glob
 
-me = "dem.py"
+me = "stitch0.py"
+verbose = True
 dtype = np.dtype("<u2")
-processes = 16  # multiprocessing.cpu_count()
-#processes = 'serial'
+processes = multiprocessing.cpu_count()
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 tx, ty = 3, 5
 nx, ny, nz = 2048, 2048, 4299
-sx, sy, sz = 4, 4, 4
-di = '/home/lisergey/s1/AnnaMaria/HuADf2/HuADf1.2/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647'
-path = (
-    '1.2.HC_X-5000_Y-10000_640_nm_4x_Left_000044.raw',
-    '1.2.HC_X-5000_Y-7500_640_nm_4x_Left_000041.raw',
-    '1.2.HC_X-5000_Y-5000_640_nm_4x_Left_000038.raw',
-    '1.2.HC_X-5000_Y-2500_640_nm_4x_Left_000035.raw',
-    '1.2.HC_X-5000_Y0_640_nm_4x_Left_000032.raw',
-    '1.2.HC_X-2500_Y-10000_640_nm_4x_Left_000029.raw',
-    '1.2.HC_X-2500_Y-7500_640_nm_4x_Left_000026.raw',
-    '1.2.HC_X-2500_Y-5000_640_nm_4x_Left_000023.raw',
-    '1.2.HC_X-2500_Y-2500_640_nm_4x_Left_000020.raw',
-    '1.2.HC_X-2500_Y0_640_nm_4x_Left_000017.raw',
-    '1.2.HC_X0_Y-10000_640_nm_4x_Right_000014.raw',
-    '1.2.HC_X0_Y-7500_640_nm_4x_Right_000011.raw',
-    '1.2.HC_X0_Y-5000_640_nm_4x_Right_000008.raw',
-    '1.2.HC_X0_Y-2500_640_nm_4x_Right_000005.raw',
-    '1.2.HC_X0_Y0_640_nm_4x_Right_000002.raw',
-)
-glb.SRC = tuple(
-    np.memmap(os.path.join(di, e), dtype, 'r', 0, (
-        nz, ny, nx), 'F')[::sx, ::sy, ::sz].copy() for e in path)
+sx, sy, sz = 8, 8, 8
+di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
+X = glob.glob(di+'*640*.raw')
+ending = np.zeros((len(X),))
+for j,filename in enumerate(X):
+  ending[j] = np.double(filename[-6:-4])
+indices = np.flip(np.argsort(ending))
+path = tuple([X[indices[i]] for i in range(len(indices))])
+for i in path:
+    print(i)
+glb.SRC[:] = (np.memmap(e,
+                        dtype,
+                        'r',
+                        0, (nx, ny, nz),
+                        order='F')[::sx, ::sy, ::sz] for e in path)
 kx, ky, kz = glb.SRC[0].shape
 ox = 434 // sx
 oy = 425 // sy
@@ -51,44 +45,54 @@ for x in range(tx):
             pairs.append((i, (x + 1) * ty + y))
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
-layout = stw.WobblyLayout(tuple(range(len(glb.SRC))),
-                          pairs,
-                          tile_positions=tile_positions,
-                          positions=positions)
-st.align(layout.alignments,
-         depth=[434 // sx, 425 // sy, None],
-         max_shifts=[(-80 // sx, 80 // sx), (-80 // sy, 80 // sy),
-                     (-120 // sz, 120 // sz)],
-         background=(100, 120),
-         clip=25000,
-         processes=processes,
-         verbose=True)
-st.place(layout.alignments, layout.sources)
-stw.align(layout.alignments,
-          max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
-          prepare=True,
-          find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
-          processes=processes,
-          verbose=True)
-stw.place(layout.alignments,
-          layout.sources,
-          min_quality=-np.inf,
-          smooth=dict(method='window',
-                      window='hamming',
-                      window_length=100,
-                      binary=None),
-          smooth_optimized=dict(method='window',
-                                window='bartlett',
-                                window_length=20,
-                                binary=10),
-          processes=processes,
-          verbose=True)
+shifts, qualities = st.align(pairs,
+                             positions,
+                             tile_positions,
+                             depth=[434 // sx, 425 // sy, None],
+                             max_shifts=[(-80 // sx, 80 // sx),
+                                         (-80 // sy, 80 // sy),
+                                         (-120 // sz, 120 // sz)],
+                             background=(100, 120),
+                             clip=25000,
+                             processes=processes,
+                             verbose=verbose)
+positions = st.place(pairs, positions, shifts)
+displacements, qualities, status = stw.align(
+    pairs,
+    positions,
+    max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
+    prepare=True,
+    find_shifts=dict(method='tracing', cutoff=3 * np.sqrt(2)),
+    processes=processes,
+    verbose=verbose)
+positions_new, components = stw.place0(pairs,
+                                       positions,
+                                       displacements,
+                                       qualities,
+                                       status,
+                                       smooth=dict(method='window',
+                                                   window='hamming',
+                                                   window_length=100,
+                                                   binary=None),
+                                       min_quality=-np.inf,
+                                       processes=processes,
+                                       verbose=verbose)
 
-ux, uy, uz = layout.shape_wobbly()
+wobble, status = stw.place1(positions,
+                            positions_new,
+                            components,
+                            smooth=dict(method='window',
+                                        window='bartlett',
+                                        window_length=20,
+                                        binary=10),
+                            processes=processes,
+                            verbose=verbose)
+
+ux, uy, uz = stw.shape_wobbly(glb.SRC[0].shape, positions, wobble)
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-stw.stitch(layout, processes, verbose=True)
+stw.stitch(glb.SRC[0].shape, positions, wobble, status, processes, verbose=verbose)
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))
