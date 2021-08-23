@@ -15,14 +15,16 @@ processes = multiprocessing.cpu_count()
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 tx, ty = 3, 5
 nx, ny, nz = 2048, 2048, 4299
-sx, sy, sz = 8, 8, 8
+sx, sy, sz = 1, 1, 1
 di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
-X = glob.glob(di+'*640*.raw')
-ending = [int(filename[-6:-4]) for filename in X]
-indices = np.argsort(ending)
-path = tuple([X[indices[i]] for i in range(len(indices))])
-for i in path:
-    print(i)
+path = glob.glob(di+'*640*.raw')
+def key(f):
+    x = f.split('_')[-7][1:]
+    y = f.split('_')[-6][1:]
+    return -int(x), -int(y)
+path.sort(key=key)
+for p in path:
+    print(p)
 glb.SRC[:] = (np.memmap(e,
                         dtype,
                         'r',
