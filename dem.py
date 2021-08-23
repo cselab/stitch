@@ -1,42 +1,37 @@
-import stitch.Rigid as st
-import stitch.Wobbly as stw
+import glob
 import mmap
 import multiprocessing
 import numpy as np
 import os
-import sys
 import stitch.glb as glb
+import stitch.Rigid as st
+import stitch.Wobbly as stw
+import sys
 
-me = "stitch0.py"
-verbose = False
+me = "dem.py"
+verbose = True
 dtype = np.dtype("<u2")
-processes = multiprocessing.cpu_count()
-#processes = 'serial'
+processes = 22
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
-di = '/home/lisergey/stride8'
 tx, ty = 3, 5
 nx, ny, nz = 2048, 2048, 4299
-sx, sy, sz = 8, 8, 8
-path = (
-    '02x04.raw',
-    '02x03.raw',
-    '02x02.raw',
-    '02x01.raw',
-    '02x00.raw',
-    '01x04.raw',
-    '01x03.raw',
-    '01x02.raw',
-    '01x01.raw',
-    '01x00.raw',
-    '00x04.raw',
-    '00x03.raw',
-    '00x02.raw',
-    '00x01.raw',
-    '00x00.raw',
-)
-kx = (nx + sx - 1) // sx
-ky = (ny + sy - 1) // sy
-kz = (nz + sz - 1) // sz
+sx = sy = sz = 16
+di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
+path = glob.glob(di + '*640*.raw')
+
+
+def key(f):
+    x = f.split('_')[-7][1:]
+    y = f.split('_')[-6][1:]
+    return -int(x), -int(y)
+
+
+path.sort(key=key)
+for p in path:
+    print(p)
+glb.SRC[:] = (np.memmap(e, dtype, 'r', 0, (nx, ny, nz),
+                        order='F')[::sx, ::sy, ::sz] for e in path)
+kx, ky, kz = glb.SRC[0].shape
 ox = 434 // sx
 oy = 425 // sy
 positions = []
@@ -51,11 +46,6 @@ for x in range(tx):
             pairs.append((i, (x + 1) * ty + y))
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
-glb.SRC[:] = (np.memmap(os.path.join(di, e),
-                        dtype,
-                        'r',
-                        0, (kx, ky, kz),
-                        order='F') for e in path)
 shifts, qualities = st.align(pairs,
                              positions,
                              tile_positions,
@@ -67,13 +57,7 @@ shifts, qualities = st.align(pairs,
                              clip=25000,
                              processes=processes,
                              verbose=verbose)
-
-displacements = []
-for (i, j), shift, in zip(pairs, shifts):
-    displacements.append(
-        tuple(q + s - p for p, q, s in zip(positions[i], positions[j], shift)))
-
-positions = st.place(pairs, len(positions), displacements)
+positions = st.place(pairs, positions, shifts)
 displacements, qualities, status = stw.align(
     pairs,
     positions,
@@ -118,3 +102,6 @@ stw.stitch(glb.SRC[0].shape,
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))
+
+#import poc.pgm
+#poc.pgm.pgm("a.pgm", sink[:, :, uz//2])

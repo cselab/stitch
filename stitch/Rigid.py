@@ -149,9 +149,10 @@ def align(pairs, positions, tile_position, depth, max_shifts, clip, background,
 def place(pairs, positions, shifts):
     n = 3 * len(shifts)
     m = 3 * (len(positions) - 1)
-    s = [ ]
+    s = []
     for (i, j), shift in zip(pairs, shifts):
-        s.extend(q + sh - p for p, q, sh in zip(positions[i], positions[j], shift))
+        s.extend(q + sh - p
+                 for p, q, sh in zip(positions[i], positions[j], shift))
     M = np.zeros((n, m))
     k = 0
     for i, j in pairs:
@@ -167,7 +168,6 @@ def place(pairs, positions, shifts):
     pos = np.asarray(np.round(pos), dtype=int)
     pos -= np.min(pos, axis=0)
     return [tuple(p) for p in pos]
-
 
 
 def stitch_weights(shape):
