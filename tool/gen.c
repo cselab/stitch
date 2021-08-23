@@ -155,10 +155,8 @@ main(int argc, char **argv)
     scale = 1.0 / (tx * (nx - overlap[X]));
     for (x = 0; x < tx; x++)
         for (y = 0; y < ty; y++) {
-            snprintf(raw_filename, sizeof raw_filename, "%02d.%02d.raw", x,
-                     y);
-            snprintf(raw_path, sizeof raw_path, "%s/%02d.%02d.raw",
-                     directory, x, y);
+            snprintf(raw_path, sizeof raw_path, "%s/%dx%dle.%02d.%02d.raw",
+                     directory, nx, ny, x, y);
             if ((file = fopen(raw_path, "w")) == NULL) {
                 fprintf(stderr, "%s: fail to wirte '%s'\n", me, raw_path);
                 exit(2);
@@ -181,55 +179,7 @@ main(int argc, char **argv)
                             exit(2);
                         }
                     }
-            fclose(file);
-            snprintf(mhd, sizeof mhd, "%s/%02d.%02d.mhd", directory, x, y);
-            if ((file = fopen(mhd, "w")) == NULL) {
-                fprintf(stderr, "%s: fail to wirte '%s'\n", me, mhd);
-                exit(2);
-            }
-            fprintf(file,
-                    "ObjectType = Image\n"
-                    "NDims = 3\n"
-                    "DimSize = %d %d %d\n"
-                    "ElementType = MET_USHORT\n"
-                    "ElementByteOrderMSB = False\n"
-                    "ElementDataFile = %s\n", nx, ny, nz, raw_filename);
-            fclose(file);
-            snprintf(xdmf, sizeof xdmf, "%s/%02d.%02d.xdmf2", directory, x,
-                     y);
-            if ((file = fopen(xdmf, "w")) == NULL) {
-                fprintf(stderr, "%s: fail to wirte '%s'\n", me, xdmf);
-                exit(2);
-            }
-            fprintf(file,
-                    "<?xml version=\"1.0\" ?>\n"
-                    "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n"
-                    "<Xdmf Version=\"2.0\">\n"
-                    " <Domain>\n"
-                    "   <Grid Name=\"mesh\" GridType=\"Uniform\">\n"
-                    "     <Topology TopologyType=\"3DCORECTMesh\" Dimensions=\"%d %d %d\"/>\n"
-                    "     <Geometry GeometryType=\"ORIGIN_DXDYDZ\">\n"
-                    "       <DataItem Name=\"Origin\" Dimensions=\"3\" NumberType=\"Float\" Precision=\"8\" Format=\"XML\">\n"
-                    "         %d %d %d\n"
-                    "       </DataItem>\n"
-                    "       <DataItem Name=\"Spacing\" Dimensions=\"3\" NumberType=\"Float\" Precision=\"4\" Format=\"XML\">\n"
-                    "         1 1 1\n"
-                    "       </DataItem>\n"
-                    "     </Geometry>\n"
-                    "     <Attribute Name=\"u\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
-                    "       <DataItem Dimensions=\"%d %d %d\" NumberType=\"UShort\" Format=\"Binary\">\n"
-                    "        %s\n"
-                    "       </DataItem>\n"
-                    "     </Attribute>\n"
-                    "   </Grid>\n"
-                    " </Domain>\n"
-                    "</Xdmf>\n",
-                    nz + 1, ny + 1, nx + 1, 0, y * ny, x * nx, nz, ny, nx,
-                    raw_filename);
-            fclose(file);
-            fprintf(stderr, "%c%s", x != 0 || y != 0 ? ';' : '\'', xdmf);
         }
-    fprintf(stderr, "'\n");
 }
 
 static void
