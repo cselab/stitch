@@ -1,6 +1,7 @@
 import numpy as np
 import mmap
 
+
 def pgm(path, a):
     nx, ny = a.shape
     dtype = np.dtype(">u2")
