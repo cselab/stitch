@@ -179,10 +179,10 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
     nrm = np.abs(nrm[roilx:roiux, roily:roiuy])
     eps = 2.2204e-16
     nrm[nrm < eps] = eps
-    for i, a in enumerate(range(start, stop)):
-        if verbose and (i - start) % 100 == 0:
+    for a in range(start, stop):
+        if verbose and a - start % 100 == 0:
             sys.stderr.write('Wobbly: alignment: slice %d / %d\n' %
-                             (i, stop - start))
+                             (a - start, stop - start))
         if prepare:
             i1a = b11 * i1[:, :, a - start] + b10
             i2a = b21 * i2[:, :, a - start] + b20
@@ -199,13 +199,11 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
             w2fft) - 2 * i1fft * np.conj(i2fft)
         wssd = np.fft.ifftn(wssd)
         wssd = wssd[roilx:roiux, roily:roiuy]
-        errors[i] = np.abs(wssd / nrm)
-        status[i] = MEASURED
+        errors[a - start] = np.abs(wssd / nrm)
+        status[a - start] = MEASURED
     shifts, qualities, status = shifts_from_tracing(errors, status,
                                                     **find_shifts)
-    for i in range(n_slices):
-        shifts[i][0] += mlx
-        shifts[i][1] += mly
+    shifts += (mlx, mly)
     return shifts, qualities, status
 
 
