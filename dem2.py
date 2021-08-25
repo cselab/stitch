@@ -17,13 +17,6 @@ def open(path):
     return np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
                      order='F')[::sx, ::sy, ::sz]
 
-
-def key(f):
-    x = f.split('_')[-7][1:]
-    y = f.split('_')[-6][1:]
-    return -int(x), -int(y)
-
-
 def tile(path):
     lst = []
     for p in path:
