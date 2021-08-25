@@ -8,10 +8,10 @@ import sys
 import stitch.glb as glb
 
 me = "stitch0.py"
-verbose = False
+verbose = True
 dtype = np.dtype("<u2")
-processes = multiprocessing.cpu_count()
-#processes = 'serial'
+#processes = multiprocessing.cpu_count()
+processes = 'serial'
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 di = '/home/lisergey/stride8'
 tx, ty = 3, 5
@@ -28,6 +28,7 @@ path = (
     '01x02.raw',
     '01x01.raw',
     '01x00.raw',
+
     '00x04.raw',
     '00x03.raw',
     '00x02.raw',
@@ -68,12 +69,7 @@ shifts, qualities = st.align(pairs,
                              processes=processes,
                              verbose=verbose)
 
-displacements = []
-for (i, j), shift, in zip(pairs, shifts):
-    displacements.append(
-        tuple(q + s - p for p, q, s in zip(positions[i], positions[j], shift)))
-
-positions = st.place(pairs, len(positions), displacements)
+positions = st.place(pairs, positions, shifts)
 displacements, qualities, status = stw.align(
     pairs,
     positions,
