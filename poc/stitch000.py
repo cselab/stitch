@@ -71,7 +71,7 @@ st.place(layout.alignments, layout.sources)
 stw.align(layout.alignments,
           max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
           prepare=True,
-          find_shifts=dict(cutoff=3 * np.sqrt(2)),
+          find_shifts=dict(cutoff=3 * np.sqrt(2) / sx),
           processes=processes,
           verbose=True)
 stw.place(layout.alignments,
