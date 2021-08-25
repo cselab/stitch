@@ -121,12 +121,24 @@ def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
 
     def a2arg(i, j):
         return i, positions[i], j, positions[j]
-
+    
+    w1fftX = [None]*len(pairs)
+    w2fftX = [None]*len(pairs)
+    nrmX = [None]*len(pairs)
+    b10X = [None]*len(pairs)
+    b11X = [None]*len(pairs)
+    b20X = [None]*len(pairs)
+    b21X = [None]*len(pairs)
+    for index,pair in enumerate(pairs):
+        nrmX[index], w2fftX[index], w1fftX[index],b10X[index], b11X[index], b20X[index], b21X[index] = align_pair_serial(*a2arg(pair[0], pair[1]), max_shifts, prepare=prepare, find_shifts=find_shifts,verbose=verbose)
+        print(index)
+        
     f = ft.partial(align_pair,
                    max_shifts=max_shifts,
                    prepare=prepare,
                    find_shifts=find_shifts,
-                   verbose=verbose)
+                   verbose=verbose,
+                   nrmX=nrmX, w2fftX=w2fftX, w1fftX=w1fftX,b10X=b10X, b11X=b11X, b20X=b20X, b21X=b21X,pairs=pairs)
     if processes == 'serial':
         results = [f(*a2arg(i, j)) for i, j in pairs]
     else:
@@ -135,8 +147,50 @@ def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
     return zip(*results)
 
 
-def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
+def align_pair_serial(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
                verbose):
+    if verbose:
+        sys.stderr.write('Wobbly: precomputation for align_pair\n')
+    find_shifts = dict(method=find_shifts)
+    s1 = glb.SRC[source1].shape
+    s2 = glb.SRC[source2].shape
+
+    z1 = p1[2]
+    z2 = p2[2]
+
+    (mlx, mux), (mly, muy) = max_shifts
+
+    start = max(z1, z2)
+    stop = min(z1 + s1[2], z2 + s2[2])
+    if start > stop:
+        raise ValueError('The sources do not overlap!')
+    s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = strg.padding0(
+        s1[0], p2[0] - p1[0], s2[0], mlx, mux)
+    s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = strg.padding0(
+        s1[1], p2[1] - p1[1], s2[1], mly, muy)
+    i1 = glb.SRC[source1][s1lx:s1ux, s1ly:s1uy, start - z1:stop - z1]
+    i2 = glb.SRC[source2][s2lx:s2ux, s2ly:s2uy, start - z2:stop - z2]
+    if prepare:
+        b10, b11 = norm_coef(i1)
+        b20, b21 = norm_coef(i2)
+    sx = s1ux - s1lx + pad1x[0] + pad1x[1]
+    sy = s1uy - s1ly + pad1y[0] + pad1y[1]
+
+    w1 = np.zeros((sx, sy))
+    w1[np1x, np1y] = 1
+    w1fft = np.fft.fftn(w1)
+
+    w2 = np.zeros((sx, sy))
+    w2[np2x, np2y] = 1
+    w2fft = np.fft.fftn(w2)
+    nrm = np.fft.ifftn(w1fft * np.conj(w2fft))
+    nrm = np.abs(nrm[roilx:roiux, roily:roiuy])
+    eps = 2.2204e-16
+    nrm[nrm < eps] = eps
+    return nrm, w2fft, w1fft, b10, b11, b20, b21
+
+def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
+               verbose,nrmX, w2fftX, w1fftX, b10X, b11X, b20X, b21X, pairs):
     if verbose:
         sys.stderr.write('Wobbly: align_pair\n')
     find_shifts = dict(method=find_shifts)
@@ -159,24 +213,23 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
         s1[1], p2[1] - p1[1], s2[1], mly, muy)
     i1 = glb.SRC[source1][s1lx:s1ux, s1ly:s1uy, start - z1:stop - z1]
     i2 = glb.SRC[source2][s2lx:s2ux, s2ly:s2uy, start - z2:stop - z2]
+    
+    indexX = pairs.index((source1,source2))
+    
     if prepare:
-        b10, b11 = norm_coef(i1)
-        b20, b21 = norm_coef(i2)
+        b10 = b10X[indexX]
+        b11 = b11X[indexX]
+        b20 = b20X[indexX]
+        b21 = b21X[indexX]
+    
     status = INVALID * np.ones(n_slices, dtype=int)
     errors = np.zeros((n_slices, roiux if roilx is None else -roilx,
                        roiuy if roily is None else -roily))
-    sx = s1ux - s1lx + pad1x[0] + pad1x[1]
-    sy = s1uy - s1ly + pad1y[0] + pad1y[1]
 
-    w1 = np.zeros((sx, sy))
-    w1[np1x, np1y] = 1
-    w1fft = np.fft.fftn(w1)
-
-    w2 = np.zeros((sx, sy))
-    w2[np2x, np2y] = 1
-    w2fft = np.fft.fftn(w2)
-    nrm = np.fft.ifftn(w1fft * np.conj(w2fft))
-    nrm = np.abs(nrm[roilx:roiux, roily:roiuy])
+    w1fft = w1fftX[indexX]
+    w2fft = w2fftX[indexX]
+    nrm = nrmX[indexX]
+    
     eps = 2.2204e-16
     nrm[nrm < eps] = eps
     for a in range(start, stop):
