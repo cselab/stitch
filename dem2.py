@@ -9,15 +9,23 @@ import stitch.Wobbly as stw
 import sys
 
 me = "dem.py"
-di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
+# '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
+di = sys.argv[1]
+globs = ('*640*.raw', '*488*.raw', '*561*.raw')
 ou = os.path.split(os.path.realpath(di))[-1]
-sx = sy = sz = 8
+sx = sy = sz = 1
 
 def open(path):
     return np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
                      order='F')[::sx, ::sy, ::sz]
 
-def tile(path):
+
+def tile(g):
+    g = os.path.join(di, g)
+    return tile0(glob.glob(g))
+
+def tile0(path):
+    assert path
     lst = []
     for p in path:
         for e in os.path.basename(p).split('_'):
@@ -34,10 +42,10 @@ def tile(path):
     return path, tx, ty
 
 
-verbose = False
+verbose = True
 dtype = np.dtype("<u2")
 nx, ny, nz = 2048, 2048, 4299
-path, tx, ty = tile(glob.glob(di + '*640*.raw'))
+path, tx, ty = tile(globs[0])
 processes = (tx - 1) * ty + tx * (ty - 1)
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 glb.SRC[:] = (open(e) for e in path)
@@ -103,11 +111,7 @@ ux, uy, uz = stw.shape_wobbly(glb.SRC[0].shape, positions, wobble)
 
 if not os.path.exists(ou):
     os.makedirs(ou)
-for i, g in enumerate((
-        glob.glob(di + '*640*.raw'),
-        glob.glob(di + '*488*.raw'),
-        glob.glob(di + '*561*.raw'),
-)):
+for i, g in enumerate(globs):
     path = tile(g)[0]
     output = os.path.join(ou, "%dx%dx%dle.%d.raw" % (ux, uy, uz, i))
     sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')

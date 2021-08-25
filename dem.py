@@ -8,13 +8,17 @@ import stitch.Rigid as st
 import stitch.Wobbly as stw
 import sys
 
+
 def open(path):
     return np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
                      order='F')[::sx, ::sy, ::sz]
+
+
 def key(f):
     x = f.split('_')[-7][1:]
     y = f.split('_')[-6][1:]
     return -int(x), -int(y)
+
 
 di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
 
@@ -31,7 +35,7 @@ path.sort(key=key)
 glb.SRC[:] = (open(e) for e in path)
 for p in path:
     print(p)
-    
+
 kx, ky, kz = glb.SRC[0].shape
 ox = 434 // sx
 oy = 425 // sy
