@@ -139,7 +139,6 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
                verbose):
     if verbose:
         sys.stderr.write('Wobbly: align_pair\n')
-    find_shifts = dict(method=find_shifts)
     s1 = glb.SRC[source1].shape
     s2 = glb.SRC[source2].shape
 
@@ -201,8 +200,7 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
         wssd = wssd[roilx:roiux, roily:roiuy]
         errors[a - start] = np.abs(wssd / nrm)
         status[a - start] = MEASURED
-    shifts, qualities, status = shifts_from_tracing(errors, status,
-                                                    **find_shifts)
+    shifts, qualities, status = shifts_from_tracing(errors, status, **find_shifts)
     shifts += (mlx, mly)
     return shifts, qualities, status
 
@@ -237,10 +235,8 @@ def detect_local_minima(error):
 
 def shifts_from_tracing(errors,
                         status,
-                        cutoff=None,
-                        new_trajectory_cost=None,
-                        verbose=False,
-                        **kwargs):
+                        new_trajectory_cost = None,
+                        cutoff = None):
     n = len(status)
     qualities = -np.inf * np.ones(n)
     shifts = np.zeros((n, errors.ndim - 1), dtype=int)
