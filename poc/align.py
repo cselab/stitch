@@ -76,7 +76,7 @@ displacements, qualities, status = stw.align(
     positions,
     max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
     prepare=True,
-    find_shifts=dict(cutoff=3 * np.sqrt(2) / sx),
+    find_shifts=dict(cutoff=3 * np.sqrt(2)),
     processes=processes,
     verbose=verbose)
 
