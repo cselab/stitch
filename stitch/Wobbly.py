@@ -121,24 +121,36 @@ def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
 
     def a2arg(i, j):
         return i, positions[i], j, positions[j]
-    
-    w1fftX = [None]*len(pairs)
-    w2fftX = [None]*len(pairs)
-    nrmX = [None]*len(pairs)
-    b10X = [None]*len(pairs)
-    b11X = [None]*len(pairs)
-    b20X = [None]*len(pairs)
-    b21X = [None]*len(pairs)
-    for index,pair in enumerate(pairs):
-        nrmX[index], w2fftX[index], w1fftX[index],b10X[index], b11X[index], b20X[index], b21X[index] = align_pair_serial(*a2arg(pair[0], pair[1]), max_shifts, prepare=prepare, find_shifts=find_shifts,verbose=verbose)
-        print(index)
-        
+
+    w1fftX = [None] * len(pairs)
+    w2fftX = [None] * len(pairs)
+    nrmX = [None] * len(pairs)
+    b10X = [None] * len(pairs)
+    b11X = [None] * len(pairs)
+    b20X = [None] * len(pairs)
+    b21X = [None] * len(pairs)
+    for index, pair in enumerate(pairs):
+        nrmX[index], w2fftX[index], w1fftX[index], b10X[index], b11X[
+            index], b20X[index], b21X[index] = align_pair_serial(
+                *a2arg(pair[0], pair[1]),
+                max_shifts,
+                prepare=prepare,
+                find_shifts=find_shifts,
+                verbose=verbose)
+
     f = ft.partial(align_pair,
                    max_shifts=max_shifts,
                    prepare=prepare,
                    find_shifts=find_shifts,
                    verbose=verbose,
-                   nrmX=nrmX, w2fftX=w2fftX, w1fftX=w1fftX,b10X=b10X, b11X=b11X, b20X=b20X, b21X=b21X,pairs=pairs)
+                   nrmX=nrmX,
+                   w2fftX=w2fftX,
+                   w1fftX=w1fftX,
+                   b10X=b10X,
+                   b11X=b11X,
+                   b20X=b20X,
+                   b21X=b21X,
+                   pairs=pairs)
     if processes == 'serial':
         results = [f(*a2arg(i, j)) for i, j in pairs]
     else:
@@ -147,8 +159,8 @@ def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
     return zip(*results)
 
 
-def align_pair_serial(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
-               verbose):
+def align_pair_serial(source1, p1, source2, p2, max_shifts, prepare,
+                      find_shifts, verbose):
     if verbose:
         sys.stderr.write('Wobbly: precomputation for align_pair\n')
     find_shifts = dict(method=find_shifts)
@@ -189,8 +201,9 @@ def align_pair_serial(source1, p1, source2, p2, max_shifts, prepare, find_shifts
     nrm[nrm < eps] = eps
     return nrm, w2fft, w1fft, b10, b11, b20, b21
 
+
 def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
-               verbose,nrmX, w2fftX, w1fftX, b10X, b11X, b20X, b21X, pairs):
+               verbose, nrmX, w2fftX, w1fftX, b10X, b11X, b20X, b21X, pairs):
     if verbose:
         sys.stderr.write('Wobbly: align_pair\n')
     find_shifts = dict(method=find_shifts)
@@ -213,15 +226,15 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
         s1[1], p2[1] - p1[1], s2[1], mly, muy)
     i1 = glb.SRC[source1][s1lx:s1ux, s1ly:s1uy, start - z1:stop - z1]
     i2 = glb.SRC[source2][s2lx:s2ux, s2ly:s2uy, start - z2:stop - z2]
-    
-    indexX = pairs.index((source1,source2))
-    
+
+    indexX = pairs.index((source1, source2))
+
     if prepare:
         b10 = b10X[indexX]
         b11 = b11X[indexX]
         b20 = b20X[indexX]
         b21 = b21X[indexX]
-    
+
     status = INVALID * np.ones(n_slices, dtype=int)
     errors = np.zeros((n_slices, roiux if roilx is None else -roilx,
                        roiuy if roily is None else -roily))
@@ -229,7 +242,7 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
     w1fft = w1fftX[indexX]
     w2fft = w2fftX[indexX]
     nrm = nrmX[indexX]
-    
+
     eps = 2.2204e-16
     nrm[nrm < eps] = eps
     for a in range(start, stop):
