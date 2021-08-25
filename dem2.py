@@ -10,7 +10,7 @@ import sys
 
 me = "dem.py"
 di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
-ou = 'out'
+ou = os.path.split(os.path.realpath(di))[-1]
 sx = sy = sz = 8
 
 def open(path):
