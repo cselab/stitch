@@ -180,7 +180,7 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
     eps = 2.2204e-16
     nrm[nrm < eps] = eps
     for a in range(start, stop):
-        if verbose and a - start % 100 == 0:
+        if verbose and 100 * (a - start) % n_slices  == 0:
             sys.stderr.write('Wobbly: alignment: slice %d / %d\n' %
                              (a - start, stop - start))
         if prepare:
