@@ -16,4 +16,5 @@ def pgm(path, a):
     b = np.ndarray((nx, ny), dtype, buffer, offset=offset, order='F')
     lo, hi = np.percentile(a, (10, 90))
     np.clip(a, lo, hi, b)
-    b[:] = (b - lo) / (hi - lo) * M
+    if hi - lo > 0:
+        b[:] = (b - lo) / (hi - lo) * M
