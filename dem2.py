@@ -123,5 +123,4 @@ for i, g in enumerate(globs):
                status,
                processes,
                verbose=verbose)
-    sys.stderr.write("%.2g%% %s\n" %
-                     (100 * np.count_nonzero(sink) / np.size(sink), output))
+    sys.stderr.write("%s\n" % output)
