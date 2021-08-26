@@ -13,7 +13,7 @@ me = "dem.py"
 di = sys.argv[1]
 globs = ('*640*.raw', '*488*.raw', '*561*.raw')
 ou = os.path.split(os.path.realpath(di))[-1]
-sx = sy = sz = 1
+sx = sy = sz = 8
 
 
 def open(path):
@@ -88,9 +88,8 @@ displacements, qualities, status = stw.align(
     find_shifts=dict(cutoff=3 * np.sqrt(2) / sx),
     processes=processes,
     verbose=verbose)
-positions_new, components = stw.place0(
-    (kx, ky, kz),
-    pairs,
+positions_new, components = stw.place0((kx, ky, kz),
+                                       pairs,
                                        positions,
                                        displacements,
                                        qualities,
@@ -103,9 +102,8 @@ positions_new, components = stw.place0(
                                        processes=processes,
                                        verbose=verbose)
 
-wobble, status = stw.place1(
-    (kx, ky, kz),
-    positions,
+wobble, status = stw.place1((kx, ky, kz),
+                            positions,
                             positions_new,
                             components,
                             smooth=dict(method='window',

@@ -73,9 +73,8 @@ displacements, qualities, status = stw.align(
     find_shifts=dict(cutoff=3 * np.sqrt(2) / sx),
     processes=processes,
     verbose=verbose)
-positions_new, components = stw.place0(
-    (kx, ky, kz),
-    pairs,
+positions_new, components = stw.place0((kx, ky, kz),
+                                       pairs,
                                        positions,
                                        displacements,
                                        qualities,
@@ -103,12 +102,7 @@ ux, uy, uz = stw.shape_wobbly((kx, ky, kz), positions, wobble)
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-stw.stitch((kx, ky, kz),
-           positions,
-           wobble,
-           status,
-           processes,
-           verbose=verbose)
+stw.stitch((kx, ky, kz), positions, wobble, status, processes, verbose=verbose)
 sys.stderr.write("%s\n" % output)
 
 #import poc.pgm
