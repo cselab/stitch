@@ -158,9 +158,10 @@ def place(pairs, positions, shifts):
     return [tuple(p) for p in pos]
 
 
-def stitch_weights(shape):
-    ranges = [np.arange(s) for s in shape]
-    mesh = np.meshgrid(*ranges, indexing='ij')
+def stitch_weights(x, y):
+    rx = np.arange(x)
+    ry = np.arange(y)
+    mesh = np.meshgrid(rx, ry, indexing='ij')
     mesh = [np.min([m, np.max(m) - m], axis=0) for m in mesh]
     weights = np.min(mesh, axis=0) + 1
     return weights
@@ -168,7 +169,7 @@ def stitch_weights(shape):
 
 def stitch_by_function_with_weights(sources, position, regions, stitched):
     shapes = [s.shape for s in sources]
-    w = stitch_weights(shapes[0])
+    w = stitch_weights(*shapes[0])
     for r in regions:
         nsources = len(r.sources)
         if nsources > 1:
