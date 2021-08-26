@@ -39,16 +39,14 @@ def padding0(s1, p2, s2, minx, maxx):
     return o1l, o1u, o2l - p2, o2u - p2, pad1, pad2, np1, np2, roil, roiu
 
 
-def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
+def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip, background,
                verbose):
     if verbose:
         sys.stderr.write('Rigid [%d] start align_pair\n' % os.getpid())
     depth = depth[axis]
     max_shifts = max_shifts[:axis] + max_shifts[axis + 1:]
-    s1 = glb.SRC[src1].shape
-    s2 = glb.SRC[src2].shape
-    d1 = max(0, s1[axis] - depth)
-    d2 = min(depth, s2[axis])
+    d1 = max(0, shape[axis] - depth)
+    d2 = min(depth, shape[axis])
     if axis == 0:
         mip1 = np.max(glb.SRC[src1][d1:, :, :], axis=axis)
         mip2 = np.max(glb.SRC[src2][:d2, :, :], axis=axis)
@@ -120,15 +118,13 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
 
 def align(shape, pairs, positions, tile_position, depth, max_shifts, clip,
           background, processes, verbose):
-    args = (depth, max_shifts, clip, background, verbose)
-
     def a2arg(i, j):
         axis = 1 if tile_position[i][0] == tile_position[j][0] else 0
         shift = (positions[i][0] - positions[j][0],
                  positions[i][1] - positions[j][1],
                  positions[i][2] - positions[j][2])
         return i, j, shift, axis
-
+    args = (shape, depth, max_shifts, clip, background, verbose)
     if processes == 'serial':
         results = [align_pair(*(a2arg(i, j) + args)) for i, j in pairs]
     else:
