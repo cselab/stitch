@@ -57,7 +57,8 @@ glb.SRC[:] = (np.memmap(os.path.join(di, e),
                         'r',
                         0, (kx, ky, kz),
                         order='F') for e in path)
-shifts, qualities = st.align(pairs,
+shifts, qualities = st.align((kx, ky, kz),
+                             pairs,
                              positions,
                              tile_positions,
                              depth=[434 // sx, 425 // sy, None],
@@ -71,6 +72,7 @@ shifts, qualities = st.align(pairs,
 
 positions = st.place(pairs, positions, shifts)
 displacements, qualities, status = stw.align(
+    (kx, ky, kz),
     pairs,
     positions,
     max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
@@ -78,7 +80,8 @@ displacements, qualities, status = stw.align(
     find_shifts=dict(cutoff=3 * np.sqrt(2)),
     processes=processes,
     verbose=verbose)
-positions_new, components = stw.place0(pairs,
+positions_new, components = stw.place0((kx, ky, kz),
+                                       pairs,
                                        positions,
                                        displacements,
                                        qualities,
@@ -91,7 +94,8 @@ positions_new, components = stw.place0(pairs,
                                        processes=processes,
                                        verbose=verbose)
 
-wobble, status = stw.place1(positions,
+wobble, status = stw.place1((kx, ky, kz),
+                            positions,
                             positions_new,
                             components,
                             smooth=dict(method='window',
@@ -101,16 +105,11 @@ wobble, status = stw.place1(positions,
                             processes=processes,
                             verbose=verbose)
 
-ux, uy, uz = stw.shape_wobbly(glb.SRC[0].shape, positions, wobble)
+ux, uy, uz = stw.shape_wobbly((kx, ky, kz), positions, wobble)
 output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-stw.stitch(glb.SRC[0].shape,
-           positions,
-           wobble,
-           status,
-           processes,
-           verbose=verbose)
+stw.stitch((kx, ky, kz), positions, wobble, status, processes, verbose=verbose)
 sys.stderr.write(
     "[%d %d %d] %.2g%% %s\n" %
     (*sink.shape, 100 * np.count_nonzero(sink) / np.size(sink), output))

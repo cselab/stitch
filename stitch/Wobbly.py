@@ -113,7 +113,7 @@ def origin_wobbly(positions, wobble):
     return max(0, x), max(0, y), max(0, z)
 
 
-def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
+def align(shape, pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
     if verbose:
         sys.stderr.write('Wobbly: start align')
@@ -307,7 +307,7 @@ def shifts_from_tracing(errors, status, new_trajectory_cost=None, cutoff=None):
     return shifts, qualities, status
 
 
-def place0(pairs, positions, displacements, qualities, status, smooth,
+def place0(shape, pairs, positions, displacements, qualities, status, smooth,
            min_quality, processes, verbose):
     lo = min(p[2] for p in positions)
     hi = max(p[2] + glb.SRC[i].shape[2] for i, p in enumerate(positions))
@@ -351,7 +351,8 @@ def place0(pairs, positions, displacements, qualities, status, smooth,
     return zip(*results)
 
 
-def place1(positions, positions_new, components, smooth, processes, verbose):
+def place1(shape, positions, positions_new, components, smooth, processes,
+           verbose):
     n_sources = len(positions)
     wobble = [
         np.zeros((glb.SRC[i].shape[2], 2), dtype=int) for i in range(n_sources)

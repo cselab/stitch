@@ -66,7 +66,8 @@ for x in range(tx):
             pairs.append((i, (x + 1) * ty + y))
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
-shifts, qualities = st.align(pairs,
+shifts, qualities = st.align((kx, ky, kz),
+                             pairs,
                              positions,
                              tile_positions,
                              depth=[434 // sx, 425 // sy, None],
@@ -79,6 +80,7 @@ shifts, qualities = st.align(pairs,
                              verbose=verbose)
 positions = st.place(pairs, positions, shifts)
 displacements, qualities, status = stw.align(
+    (kx, ky, kz),
     pairs,
     positions,
     max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
@@ -86,7 +88,9 @@ displacements, qualities, status = stw.align(
     find_shifts=dict(cutoff=3 * np.sqrt(2) / sx),
     processes=processes,
     verbose=verbose)
-positions_new, components = stw.place0(pairs,
+positions_new, components = stw.place0(
+    (kx, ky, kz),
+    pairs,
                                        positions,
                                        displacements,
                                        qualities,
@@ -99,7 +103,9 @@ positions_new, components = stw.place0(pairs,
                                        processes=processes,
                                        verbose=verbose)
 
-wobble, status = stw.place1(positions,
+wobble, status = stw.place1(
+    (kx, ky, kz),
+    positions,
                             positions_new,
                             components,
                             smooth=dict(method='window',
@@ -109,7 +115,7 @@ wobble, status = stw.place1(positions,
                             processes=processes,
                             verbose=verbose)
 
-ux, uy, uz = stw.shape_wobbly(glb.SRC[0].shape, positions, wobble)
+ux, uy, uz = stw.shape_wobbly((kx, ky, kz), positions, wobble)
 
 if not os.path.exists(ou):
     os.makedirs(ou)
@@ -119,7 +125,7 @@ for i, g in enumerate(globs):
     sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
     glb.SINK[:] = [sink]
     glb.SRC[:] = (open(e) for e in path)
-    stw.stitch(glb.SRC[0].shape,
+    stw.stitch((kx, ky, kz),
                positions,
                wobble,
                status,
