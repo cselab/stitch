@@ -748,7 +748,7 @@ def stitch_slice(slice_id, layout, shape0, n_slices, ox, oy, sx, sy, verbose):
         regions = _add_overlap_region(regions, region)
     shape = tuple(max(s, 0) for s in layout.shape)
     new_regions = []
-    for i, r in enumerate(regions):
+    for r in regions:
         r.lower = tuple(p if l < p else l for l, p in zip(r.lower, (axl, ayl)))
         r.upper = tuple(p if u < p else u for u, p in zip(r.upper, (axl, ayl)))
         if np.all([u > l for u, l in zip(r.upper, r.lower)]):
@@ -756,7 +756,7 @@ def stitch_slice(slice_id, layout, shape0, n_slices, ox, oy, sx, sy, verbose):
     regions = new_regions
     new_regions = []
     ps = np.array((axl, ayl), dtype=int) + shape
-    for i, r in enumerate(regions):
+    for r in regions:
         r.lower = tuple(p if l > p else l for l, p in zip(r.lower, ps))
         r.upper = tuple(p if u > p else u for u, p in zip(r.upper, ps))
         if np.all([u > l for u, l in zip(r.upper, r.lower)]):
