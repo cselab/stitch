@@ -28,7 +28,7 @@ processes = 22
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
 tx, ty = 3, 5
 nx, ny, nz = 2048, 2048, 4299
-sx = sy = sz = 8
+sx = sy = sz = 1
 path = glob.glob(di + '*640*.raw')
 path.sort(key=key)
 glb.SRC[:] = (open(e) for e in path)
@@ -37,7 +37,6 @@ pairs = []
 tile_positions = []
 for x in range(tx):
     for y in range(ty):
-        tile_positions.append((x, y))
         i = x * ty + y
         if x + 1 < tx:
             pairs.append((i, (x + 1) * ty + y))
@@ -50,6 +49,7 @@ positions = ((118, 0, 161), (89, 1623, 165), (59, 3247, 167), (29, 4870, 172),
              (3228, 6561, 4))
 positions = [(x // sx, y // sy, z // sz) for x, y, z in positions]
 displacements, qualities, status = stw.align(
+    (kx, ky, kz),
     pairs,
     positions,
     max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
