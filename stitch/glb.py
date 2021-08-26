@@ -20,8 +20,7 @@ class Overlap1:
     def __init__(self, lower, shape, sources):
         self.sources = sources
         self.lower = tuple(lower)
-        self.shape = shape
-        self.upper = tuple(p + s for p, s in zip(self.lower, self.shape))
+        self.upper = tuple(p + s for p, s in zip(self.lower, shape))
 
 
 class Overlap2:
