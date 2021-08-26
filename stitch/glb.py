@@ -23,6 +23,5 @@ class Overlap2:
 
 class Overlap3:
     def __init__(self, lower, upper):
-        self.shape = tuple(u - l for u, l in zip(upper, lower))
         self.lower = lower
         self.upper = upper
