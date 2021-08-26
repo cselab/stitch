@@ -158,30 +158,3 @@ def place(pairs, positions, shifts):
     return [tuple(p) for p in pos]
 
 
-def stitch_weights(x, y):
-    rx = np.arange(x)
-    ry = np.arange(y)
-    mesh = np.meshgrid(rx, ry, indexing='ij')
-    mesh = [np.min([m, np.max(m) - m], axis=0) for m in mesh]
-    weights = np.min(mesh, axis=0) + 1
-    return weights
-
-
-def stitch_by_function_with_weights(sources, position, regions, stitched):
-    shapes = [s.shape for s in sources]
-    w = stitch_weights(*shapes[0])
-    for r in regions:
-        nsources = len(r.sources)
-        if nsources > 1:
-            rd = np.zeros((nsources, ) + r.shape)
-            wd = np.zeros((nsources, ) + r.shape)
-            for i, s, sl in zip(
-                    range(len(r.sources)), r.sources,
-                    glb.source_slicings0(r.sources, r.lower, r.upper)):
-                rd[i] = s[sl]
-                wd[i] = w[sl]
-            rd = np.average(rd, axis=0, weights=wd)
-        else:
-            s = r.sources[0]
-            rd = s[glb.local_slicing0(r.sources[0].position, r.lower, r.upper)]
-        stitched[glb.local_slicing0(position, r.lower, r.upper)] = rd
