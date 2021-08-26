@@ -117,7 +117,7 @@ def align(shape, pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
     if verbose:
         sys.stderr.write('Wobbly: start align')
-    args = (max_shifts, prepare, find_shifts, verbose)
+    args = (shape, max_shifts, prepare, find_shifts, verbose)
     if processes == 'serial':
         results = [
             align_pair(*((i, positions[i], j, positions[j]) + args))
@@ -131,27 +131,24 @@ def align(shape, pairs, positions, max_shifts, prepare, find_shifts, verbose,
     return zip(*results)
 
 
-def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
+def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare, find_shifts,
                verbose):
     if verbose:
         sys.stderr.write('Wobbly: align_pair\n')
-    s1 = glb.SRC[source1].shape
-    s2 = glb.SRC[source2].shape
-
     z1 = p1[2]
     z2 = p2[2]
 
     (mlx, mux), (mly, muy) = max_shifts
 
     start = max(z1, z2)
-    stop = min(z1 + s1[2], z2 + s2[2])
+    stop = min(z1 + shape[2], z2 + shape[2])
     if start > stop:
         raise ValueError('The sources do not overlap!')
     n_slices = stop - start
     s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = strg.padding0(
-        s1[0], p2[0] - p1[0], s2[0], mlx, mux)
+        shape[0], p2[0] - p1[0], shape[0], mlx, mux)
     s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = strg.padding0(
-        s1[1], p2[1] - p1[1], s2[1], mly, muy)
+        shape[1], p2[1] - p1[1], shape[1], mly, muy)
     i1 = glb.SRC[source1][s1lx:s1ux, s1ly:s1uy, start - z1:stop - z1]
     i2 = glb.SRC[source2][s2lx:s2ux, s2ly:s2uy, start - z2:stop - z2]
     if prepare:
@@ -310,7 +307,7 @@ def shifts_from_tracing(errors, status, new_trajectory_cost=None, cutoff=None):
 def place0(shape, pairs, positions, displacements, qualities, status, smooth,
            min_quality, processes, verbose):
     lo = min(p[2] for p in positions)
-    hi = max(p[2] + glb.SRC[i].shape[2] for i, p in enumerate(positions))
+    hi = max(p[2] + shape[2] for i, p in enumerate(positions))
     n_slices = hi - lo
     if verbose:
         sys.stderr.write('Placement: %d slices\n' % (n_slices))
@@ -325,8 +322,8 @@ def place0(shape, pairs, positions, displacements, qualities, status, smooth,
         s = status[k]
         fix_unaligned(s, d, q)
         l = max(positions[i][2], positions[j][2])
-        u = min(positions[i][2] + glb.SRC[i].shape[2],
-                positions[j][2] + glb.SRC[j].shape[2])
+        u = min(positions[i][2] + shape[2],
+                positions[j][2] + shape[2])
         if smooth:
             valids = s >= VALID
             if min_quality:
@@ -355,10 +352,10 @@ def place1(shape, positions, positions_new, components, smooth, processes,
            verbose):
     n_sources = len(positions)
     wobble = [
-        np.zeros((glb.SRC[i].shape[2], 2), dtype=int) for i in range(n_sources)
+        np.zeros((shape[2], 2), dtype=int) for i in range(n_sources)
     ]
     status = [
-        np.full(glb.SRC[i].shape[2], S_VALID, dtype=int)
+        np.full(shape[2], S_VALID, dtype=int)
         for i in range(n_sources)
     ]
 
@@ -367,7 +364,7 @@ def place1(shape, positions, positions_new, components, smooth, processes,
         for c in components_slice:
             if len(c) == 1:
                 i = c[0]
-                if 0 <= s - positions[i][2] < glb.SRC[i].shape[2]:
+                if 0 <= s - positions[i][2] < shape[2]:
                     z = s - positions[i][2]
                     status[i][z] = S_ISOLATED
     components = [[c for c in components_slice if len(c) > 1]
@@ -388,7 +385,7 @@ def place1(shape, positions, positions_new, components, smooth, processes,
     for i in range(n_sources):
         po = positions_optimized[i]
         start = positions[i][2]
-        stop = start + glb.SRC[i].shape[2]
+        stop = start + shape[2]
         wobble[i][:] = po[start:stop]
         finite = np.all(np.isfinite(p[start:stop]), axis=1)
         non_finite = np.logical_not(finite)
