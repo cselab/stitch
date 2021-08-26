@@ -64,7 +64,6 @@ glb.SRC[:] = (np.memmap(os.path.join(di, e),
 #                              max_shifts=[(-80 // sx, 80 // sx),
 #                                          (-80 // sy, 80 // sy),
 #                                          (-120 // sz, 120 // sz)],
-#                              background=(100, 120),
 #                              clip=25000,
 #                              processes=processes,
 #                              verbose=verbose)

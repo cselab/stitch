@@ -40,7 +40,7 @@ def padding0(s1, p2, s2, minx, maxx):
 
 
 def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
-               background, verbose):
+               verbose):
     if verbose:
         sys.stderr.write('Rigid [%d] start align_pair\n' % os.getpid())
     depth = depth[axis]
@@ -117,7 +117,7 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
 
 
 def align(shape, pairs, positions, tile_position, depth, max_shifts, clip,
-          background, processes, verbose):
+          processes, verbose):
     def a2arg(i, j):
         axis = 1 if tile_position[i][0] == tile_position[j][0] else 0
         shift = (positions[i][0] - positions[j][0],
@@ -125,7 +125,7 @@ def align(shape, pairs, positions, tile_position, depth, max_shifts, clip,
                  positions[i][2] - positions[j][2])
         return i, j, shift, axis
 
-    args = (shape, depth, max_shifts, clip, background, verbose)
+    args = (shape, depth, max_shifts, clip, verbose)
     if processes == 'serial':
         results = [align_pair(*(a2arg(i, j) + args)) for i, j in pairs]
     else:

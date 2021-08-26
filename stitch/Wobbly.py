@@ -774,14 +774,14 @@ def stitch_slice(slice_id, layout, shape0, n_slices, ox, oy, sx, sy, verbose):
             wd = np.zeros((nsources, r.shape[0], r.shape[1]))
             for i, s in enumerate(r.sources):
                 px, py = s.position
-                rd[i] = s[rxl - px : rxu - px, ryl - py : ryu - py]
-                wd[i] = w[rxl - px : rxu - px, ryl - py : ryu - py]
+                rd[i] = s[rxl - px:rxu - px, ryl - py:ryu - py]
+                wd[i] = w[rxl - px:rxu - px, ryl - py:ryu - py]
             rd = np.average(rd, axis=0, weights=wd)
         else:
             s = r.sources[0]
             px, py = s.position
-            rd = s[rxl - px : rxu - px, ryl - py : ryu - py]
-        stitched[rxl - axl : rxu - axl, ryl - ayl : ryu - ayl] = rd
+            rd = s[rxl - px:rxu - px, ryl - py:ryu - py]
+        stitched[rxl - axl:rxu - axl, ryl - ayl:ryu - ayl] = rd
 
     np.copyto(glb.SINK[0][fxl:fxu, fyl:fyu, slice_id], stitched[sxl:sxu,
                                                                 syl:syu], 'no')
