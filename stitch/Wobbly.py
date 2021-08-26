@@ -673,20 +673,17 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
 
 def _split_region(r, o):
     split = [o]
-    rl, ru = r.lower, r.upper
-    ol, ou = o.lower, o.upper
-    for d in range(2):
-        if rl[d] < ol[d]:
-            l = ol[:d] + rl[d:]
-            u = ou[:d] + (ol[d], ) + ru[d + 1:]
-            split.append(glb.Overlap3(*l, *u))
-
-        if ou[d] < ru[d]:
-            l = ol[:d] + (ou[d], ) + rl[d + 1:]
-            u = ou[:d] + ru[d:]
-            split.append(glb.Overlap3(*l, *u))
+    rlx, rly, rux, ruy = *r.lower, *r.upper
+    olx, oly, oux, ouy = *o.lower, *o.upper
+    if rlx < olx:
+        split.append(glb.Overlap3(rlx, rly, olx, ruy))
+    if oux < rux:
+        split.append(glb.Overlap3(oux, rly, rux, ruy))
+    if rly < oly:
+        split.append(glb.Overlap3(olx, rly, oux, oly))
+    if ouy < ruy:
+        split.append(glb.Overlap3(olx, ouy, oux, ruy))
     return split
-
 
 def _add_overlap_region(regions, region):
     regsadd = [region]
