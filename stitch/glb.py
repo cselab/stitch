@@ -15,13 +15,12 @@ class Overlap1:
 
 
 class Overlap2:
-    def __init__(self, lower, upper):
-        self.shape = tuple(u - l for u, l in zip(upper, lower))
-        self.lower = tuple(lower)
-        self.upper = tuple(upper)
+    def __init__(self, lx, ly, ux, uy):
+        self.lower = lx, ly
+        self.upper = ux, uy
 
 
 class Overlap3:
-    def __init__(self, lower, upper):
-        self.lower = lower
-        self.upper = upper
+    def __init__(self, lx, ly, ux, uy):
+        self.lower = lx, ly
+        self.upper = ux, uy

@@ -679,12 +679,12 @@ def _split_region(r, o):
         if rl[d] < ol[d]:
             l = ol[:d] + rl[d:]
             u = ou[:d] + (ol[d], ) + ru[d + 1:]
-            split.append(glb.Overlap3(lower=l, upper=u))
+            split.append(glb.Overlap3(*l, *u))
 
         if ou[d] < ru[d]:
             l = ol[:d] + (ou[d], ) + rl[d + 1:]
             u = ou[:d] + ru[d:]
-            split.append(glb.Overlap3(lower=l, upper=u))
+            split.append(glb.Overlap3(*l, *u))
     return split
 
 
@@ -700,7 +700,7 @@ def _add_overlap_region(regions, region):
             ovl = np.max([rc.lower, ra.lower], axis=0)
             ovu = np.min([rc.upper, ra.upper], axis=0)
             if np.all(ovu - ovl - 1 >= 0):
-                ov = glb.Overlap2(ovl, ovu)
+                ov = glb.Overlap2(*ovl, *ovu)
                 split = _split_region(rc, ov)
                 for s in split:
                     s.sources = rc.sources
@@ -770,8 +770,8 @@ def stitch_slice(slice_id, layout, shape0, n_slices, ox, oy, sx, sy, verbose):
         rxu, ryu = r.upper
         nsources = len(r.sources)
         if nsources > 1:
-            rd = np.zeros((nsources, r.shape[0], r.shape[1]))
-            wd = np.zeros((nsources, r.shape[0], r.shape[1]))
+            rd = np.zeros((nsources, rxu - rxl, ryu - ryl))
+            wd = np.zeros((nsources, rxu - rxl, ryu - ryl))
             for i, s in enumerate(r.sources):
                 px, py = s.position
                 rd[i] = s[rxl - px:rxu - px, ryl - py:ryu - py]
