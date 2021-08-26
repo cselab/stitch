@@ -766,20 +766,22 @@ def stitch_slice(slice_id, layout, shape0, n_slices, ox, oy, sx, sy, verbose):
     stitched = np.zeros(shape, dtype='<u2', order='F')
     w = stitch_weights(shape0[0], shape0[1])
     for r in regions:
+        rxl, ryl = r.lower
+        rxu, ryu = r.upper
         nsources = len(r.sources)
         if nsources > 1:
-            rd = np.zeros((nsources, ) + r.shape)
-            wd = np.zeros((nsources, ) + r.shape)
-            for i, s, sl in zip(
-                    range(len(r.sources)), r.sources,
-                    glb.source_slicings0(r.sources, r.lower, r.upper)):
-                rd[i] = s[sl]
-                wd[i] = w[sl]
+            rd = np.zeros((nsources, r.shape[0], r.shape[1]))
+            wd = np.zeros((nsources, r.shape[0], r.shape[1]))
+            for i, s in enumerate(r.sources):
+                px, py = s.position
+                rd[i] = s[rxl - px : rxu - px, ryl - py : ryu - py]
+                wd[i] = w[rxl - px : rxu - px, ryl - py : ryu - py]
             rd = np.average(rd, axis=0, weights=wd)
         else:
             s = r.sources[0]
-            rd = s[glb.local_slicing0(r.sources[0].position, r.lower, r.upper)]
-        stitched[glb.local_slicing0((axl, ayl), r.lower, r.upper)] = rd
+            px, py = s.position
+            rd = s[rxl - px : rxu - px, ryl - py : ryu - py]
+        stitched[rxl - axl : rxu - axl, ryl - ayl : ryu - ayl] = rd
 
     np.copyto(glb.SINK[0][fxl:fxu, fyl:fyu, slice_id], stitched[sxl:sxu,
                                                                 syl:syu], 'no')
