@@ -780,6 +780,7 @@ def stitch_slice(slice_id, layout, n_slices, ox, oy, sx, sy, verbose):
     np.copyto(glb.SINK[0][fxl:fxu, fyl:fyu, slice_id], stitched[sxl:sxu,
                                                                 syl:syu], 'no')
 
+
 def stitch_weights(x, y):
     rx = np.arange(x)
     ry = np.arange(y)
