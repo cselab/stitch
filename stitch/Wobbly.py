@@ -20,13 +20,13 @@ class Layout1:
 
 
 class Slice0:
-    def __init__(self, source, coordinate, position):
-        shape = glb.SRC[source].shape[0], glb.SRC[source].shape[1]
+    def __init__(self, sx, sy, source, coordinate, px, py):
+        shape = sx, sy
         self.coordinate = coordinate
-        self.shape = shape
+        self.shape = sx, sy
         self.source = source
-        self.upper = position[0] + shape[0], position[1] + shape[1]
-        self.position = position
+        self.upper = px + sx, py + sy
+        self.position = px, py
 
     def __getitem__(self, i):
         return glb.SRC[self.source].__getitem__((*i, self.coordinate))
@@ -664,7 +664,9 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
         for j, p in enumerate(positions):
             z = c - p[2]
             if 0 <= z < shape0[2] and status[j][z] == S_VALID:
-                s.append(Slice0(j, z, wobble[j][z]))
+                px, py = wobble[j][z]
+                sx, sy = shape0[:2]
+                s.append(Slice0(sx, sy, j, z, px, py))
         if s:
             slices.append((i, Layout1(sources=s)))
     if verbose:
