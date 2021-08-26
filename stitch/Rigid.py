@@ -1,7 +1,3 @@
-import copy
-import functools as ft
-import inspect as insp
-import itertools as itt
 import multiprocessing as mp
 import numpy as np
 import os
@@ -46,7 +42,7 @@ def padding0(s1, p2, s2, minx, maxx):
 def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
                verbose):
     if verbose:
-        sys.stderr.write('Rigid: %d: start align_pair\n' % os.getpid())
+        sys.stderr.write('Rigid [%d] start align_pair\n' % os.getpid())
     depth = depth[axis]
     max_shifts = max_shifts[:axis] + max_shifts[axis + 1:]
     s1 = glb.SRC[src1].shape
@@ -114,7 +110,7 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
     shift_min = max_shifts[0][0], max_shifts[1][0]
     shift = tuple(s + m for s, m in zip(shift, shift_min))
     if verbose:
-        sys.stderr.write('Rigid: %d: shift = %r, quality = %.2e\n' %
+        sys.stderr.write('Rigid [%d] shift = %r, quality = %.2e\n' %
                          (os.getpid(), shift, quality))
     if axis == 0:
         return (0, shift[0], shift[1]), quality
@@ -124,12 +120,7 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
 
 def align(pairs, positions, tile_position, depth, max_shifts, clip, background,
           processes, verbose):
-    f = ft.partial(align_pair,
-                   depth=depth,
-                   max_shifts=max_shifts,
-                   clip=clip,
-                   background=background,
-                   verbose=verbose)
+    args = (depth, max_shifts, clip, background, verbose)
 
     def a2arg(i, j):
         axis = 1 if tile_position[i][0] == tile_position[j][0] else 0
@@ -139,10 +130,11 @@ def align(pairs, positions, tile_position, depth, max_shifts, clip, background,
         return i, j, shift, axis
 
     if processes == 'serial':
-        results = [f(*a2arg(i, j)) for i, j in pairs]
+        results = [align_pair(*(a2arg(i, j) + args)) for i, j in pairs]
     else:
         with mp.Pool(processes) as e:
-            results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
+            results = e.starmap(align_pair,
+                                (a2arg(i, j) + args for i, j in pairs))
     return zip(*results)
 
 

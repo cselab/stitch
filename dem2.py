@@ -15,6 +15,7 @@ globs = ('*640*.raw', '*488*.raw', '*561*.raw')
 ou = os.path.split(os.path.realpath(di))[-1]
 sx = sy = sz = 1
 
+
 def open(path):
     return np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
                      order='F')[::sx, ::sy, ::sz]
@@ -23,6 +24,7 @@ def open(path):
 def tile(g):
     g = os.path.join(di, g)
     return tile0(glob.glob(g))
+
 
 def tile0(path):
     assert path

@@ -1,4 +1,3 @@
-import functools as ft
 import math
 import multiprocessing as mp
 import numpy as np
@@ -118,20 +117,17 @@ def align(pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
     if verbose:
         sys.stderr.write('Wobbly: start align')
-
-    def a2arg(i, j):
-        return i, positions[i], j, positions[j]
-
-    f = ft.partial(align_pair,
-                   max_shifts=max_shifts,
-                   prepare=prepare,
-                   find_shifts=find_shifts,
-                   verbose=verbose)
+    args = (max_shifts, prepare, find_shifts, verbose)
     if processes == 'serial':
-        results = [f(*a2arg(i, j)) for i, j in pairs]
+        results = [
+            align_pair(*((i, positions[i], j, positions[j]) + args))
+            for i, j in pairs
+        ]
     else:
         with mp.Pool(processes) as e:
-            results = e.starmap(f, (a2arg(i, j) for i, j in pairs))
+            results = e.starmap(align_pair,
+                                ((i, positions[i], j, positions[j]) + args
+                                 for i, j in pairs))
     return zip(*results)
 
 
@@ -179,9 +175,9 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
     eps = 2.2204e-16
     nrm[nrm < eps] = eps
     for a in range(start, stop):
-        if verbose and (a - start) % (n_slices // 100)  == 0:
-            sys.stderr.write('Wobbly: alignment: slice %d / %d\n' %
-                             (a - start, n_slices))
+        if verbose and (a - start) % max(n_slices // 100, 1) == 0:
+            sys.stderr.write('Wobbly [%d] alignment: slice %d / %d\n' %
+                             (os.getpid(), a - start, n_slices))
         if prepare:
             i1a = b11 * i1[:, :, a - start] + b10
             i2a = b21 * i2[:, :, a - start] + b20
@@ -200,7 +196,8 @@ def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
         wssd = wssd[roilx:roiux, roily:roiuy]
         errors[a - start] = np.abs(wssd / nrm)
         status[a - start] = MEASURED
-    shifts, qualities, status = shifts_from_tracing(errors, status, **find_shifts)
+    shifts, qualities, status = shifts_from_tracing(errors, status,
+                                                    **find_shifts)
     shifts += (mlx, mly)
     return shifts, qualities, status
 
@@ -233,10 +230,7 @@ def detect_local_minima(error):
     return shifts, qualities
 
 
-def shifts_from_tracing(errors,
-                        status,
-                        new_trajectory_cost = None,
-                        cutoff = None):
+def shifts_from_tracing(errors, status, new_trajectory_cost=None, cutoff=None):
     n = len(status)
     qualities = -np.inf * np.ones(n)
     shifts = np.zeros((n, errors.ndim - 1), dtype=int)
@@ -342,18 +336,18 @@ def place0(pairs, positions, displacements, qualities, status, smooth,
             s_displacements[l:u, k] = d
         s_qualities[l:u, k] = q
         s_status[l:u, k] = s
-    f = ft.partial(place_slice,
-                   positions=[p[:2] for p in positions],
-                   alignment_pairs=pairs,
-                   min_quality=min_quality)
+    args = ([p[:2] for p in positions], pairs, min_quality)
     if processes == 'serial':
         results = [
-            f(d, q, s)
-            for d, q, s in zip(s_displacements, s_qualities, s_status)
+            place_slice(*(t + args))
+            for t in zip(s_displacements, s_qualities, s_status)
         ]
     else:
         with mp.Pool(processes) as e:
-            results = e.starmap(f, zip(s_displacements, s_qualities, s_status))
+            results = e.starmap(
+                place_slice,
+                (t + args
+                 for t in zip(s_displacements, s_qualities, s_status)))
     return zip(*results)
 
 
@@ -385,7 +379,7 @@ def place1(positions, positions_new, components, smooth, processes, verbose):
     if smooth:
         for p in positions_optimized:
             valids = np.all(np.isfinite(p), axis=1)
-            p[:] = smooth_positions(p, valids=valids, **smooth)
+            p[:] = smooth_displacements(p, valids=valids, **smooth)
     positions_optimized_valid = np.ma.masked_invalid(positions_optimized)
     min_pos = np.array(
         np.min(np.min(positions_optimized_valid, axis=0), axis=0))
@@ -640,13 +634,6 @@ def smooth_window(x, window_length=10, window='bartlett', binary=None):
     return y
 
 
-def smooth_positions(positions, valids, method='window', **kwargs):
-    return smooth_displacements(positions,
-                                valids=valids,
-                                method=method,
-                                **kwargs)
-
-
 def smooth_displacements(displacements, valids, method='window', **kwargs):
     displacements_smooth = displacements.copy()
     if method is None:
@@ -654,15 +641,11 @@ def smooth_displacements(displacements, valids, method='window', **kwargs):
     valids = np.asarray(np.pad(valids, (1, 1), 'constant'), dtype=int)
     starts = np.where(np.diff(valids) > 0)[0]
     ends = np.where(np.diff(valids) < 0)[0]
-
-    if method == 'window':
-        smooth = ft.partial(smooth_window, **kwargs)
-    else:
-        raise ValueError('Smoothing method %r not valid!' % method)
     ndim = displacements.ndim
     for s, e in zip(starts, ends):
         for d in range(ndim):
-            smooth_displacements = smooth(displacements[s:e, d])
+            smooth_displacements = smooth_window(displacements[s:e, d],
+                                                 **kwargs)
             displacements_smooth[s:e, d] = smooth_displacements
 
     return displacements_smooth
@@ -674,7 +657,7 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
     origin = origin_wobbly(positions, wobble)
     shape = shape_wobbly(shape0, positions, wobble)
     coordinates = np.arange(origin[2], origin[2] + shape[2])
-    layout_slices = []
+    slices = []
     for i, c in enumerate(coordinates):
         s = []
         for j, p in enumerate(positions):
@@ -682,22 +665,17 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
             if 0 <= z < shape0[2] and status[j][z] == S_VALID:
                 s.append(Slice0(j, z, wobble[j][z]))
         if s:
-            layout_slices.append((i, Layout1(sources=s)))
+            slices.append((i, Layout1(sources=s)))
     if verbose:
         sys.stderr.write('Stitching: stitching %d sliced layouts\n' %
                          len(coordinates))
-    f = ft.partial(_stitch_slice,
-                   ox=origin[0],
-                   oy=origin[1],
-                   sx=shape[0],
-                   sy=shape[1],
-                   verbose=verbose)
+    args = (len(slices), origin[0], origin[1], shape[0], shape[1], verbose)
     if processes == 'serial':
-        for i, l in layout_slices:
-            f(i, l)
+        for sl in slices:
+            stitch_slice(*(sl + args))
     else:
         with mp.Pool(processes) as e:
-            e.starmap(f, layout_slices)
+            e.starmap(stitch_slice, (sl + args for sl in slices))
 
 
 def _split_region(r, o):
@@ -751,9 +729,10 @@ def _add_overlap_region(regions, region):
     return regsnew
 
 
-def _stitch_slice(slice_id, layout, ox, oy, sx, sy, verbose):
-    if verbose and slice_id % 100 == 0:
-        sys.stderr.write('Stitching: slice %d\n' % slice_id)
+def stitch_slice(slice_id, layout, n_slices, ox, oy, sx, sy, verbose):
+    if verbose and slice_id % max(1, n_slices // 100) == 0:
+        sys.stderr.write('Stitching [%d] slice %d / %d\n' %
+                         (os.getpid(), slice_id, n_slices))
     axl, ayl = layout.origin
     axu, ayu = layout.upper
     bxl, byl = ox, oy
