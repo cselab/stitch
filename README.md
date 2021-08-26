@@ -5,7 +5,7 @@ href="https://christophkirst.github.io/ClearMap2Documentation/html/wobblystitche
 
 <h2>Dependencies</h1>
 <pre>
-$ python -m pip install numpy scipy scikit-image
+$ python -m pip install numpy scikit-image
 </pre>
 
 

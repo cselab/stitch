@@ -1,5 +1,15 @@
 import numpy as np
-import scipy.spatial.distance as ssd
+
+def cdist(a, b):
+    m = len(a)
+    n = len(b)
+    dist = np.empty((m, n))
+    for i in range(m):
+        x, y = a[i]
+        for j in range(n):
+            p, q = b[j]
+            dist[i, j] = (x - p)**2 + (y - q)**2
+    return np.sqrt(dist)
 
 
 def track_positions(positions, new_trajectory_cost, cutoff):
@@ -36,7 +46,7 @@ def track_positions(positions, new_trajectory_cost, cutoff):
 
 
 def match(positions_pre, positions_post, new_trajectory_cost, cutoff):
-    cost = ssd.cdist(positions_pre, positions_post)
+    cost = cdist(positions_pre, positions_post)
     if cutoff:
         cost[cost > cutoff] = np.inf
     if new_trajectory_cost is None:
