@@ -685,6 +685,7 @@ def _split_region(r, o):
         split.append(glb.Overlap3(olx, ouy, oux, ruy))
     return split
 
+
 def _add_overlap_region(regions, region):
     regsadd = [region]
     regscheck = regions

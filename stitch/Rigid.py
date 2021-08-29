@@ -151,9 +151,10 @@ def place(pairs, positions, shifts):
             if j > 0:
                 M[k, (j - 1) * 3 + d] = 1
             k += 1
-    pos = np.dot(np.linalg.pinv(M), s)
-    pos = np.hstack([np.zeros(3), pos])
-    pos = np.reshape(pos, (-1, 3))
-    pos = np.asarray(np.round(pos), dtype=int)
-    pos -= np.min(pos, axis=0)
-    return [tuple(p) for p in pos]
+    pos, residuals, rank, sing = np.linalg.lstsq(M, s, rcond=None)
+    pos = (0, 0, 0) + tuple(round(p) for p in pos)
+    xx, yy, zz = pos[::3], pos[1::3], pos[2::3]
+    mx = min(xx)
+    my = min(yy)
+    mz = min(zz)
+    return tuple((x - mx, y - my, z - mz) for x, y, z in zip(xx, yy, zz))
