@@ -20,13 +20,11 @@ class Layout1:
 
 
 class Slice0:
-    def __init__(self, source, coordinate, position):
-        shape = glb.SRC[source].shape[0], glb.SRC[source].shape[1]
+    def __init__(self, sx, sy, source, coordinate, px, py):
         self.coordinate = coordinate
-        self.shape = shape
+        self.position = px, py
         self.source = source
-        self.upper = position[0] + shape[0], position[1] + shape[1]
-        self.position = position
+        self.upper = px + sx, py + sy
 
     def __getitem__(self, i):
         return glb.SRC[self.source].__getitem__((*i, self.coordinate))
@@ -117,7 +115,7 @@ def align(shape, pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
     if verbose:
         sys.stderr.write('Wobbly: start align')
-    args = (max_shifts, prepare, find_shifts, verbose)
+    args = (shape, max_shifts, prepare, find_shifts, verbose)
     if processes == 'serial':
         results = [
             align_pair(*((i, positions[i], j, positions[j]) + args))
@@ -131,27 +129,24 @@ def align(shape, pairs, positions, max_shifts, prepare, find_shifts, verbose,
     return zip(*results)
 
 
-def align_pair(source1, p1, source2, p2, max_shifts, prepare, find_shifts,
-               verbose):
+def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare,
+               find_shifts, verbose):
     if verbose:
         sys.stderr.write('Wobbly: align_pair\n')
-    s1 = glb.SRC[source1].shape
-    s2 = glb.SRC[source2].shape
-
     z1 = p1[2]
     z2 = p2[2]
 
     (mlx, mux), (mly, muy) = max_shifts
 
     start = max(z1, z2)
-    stop = min(z1 + s1[2], z2 + s2[2])
+    stop = min(z1 + shape[2], z2 + shape[2])
     if start > stop:
         raise ValueError('The sources do not overlap!')
     n_slices = stop - start
     s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = strg.padding0(
-        s1[0], p2[0] - p1[0], s2[0], mlx, mux)
+        shape[0], p2[0] - p1[0], shape[0], mlx, mux)
     s1ly, s1uy, s2ly, s2uy, pad1y, pad2y, np1y, np2y, roily, roiuy = strg.padding0(
-        s1[1], p2[1] - p1[1], s2[1], mly, muy)
+        shape[1], p2[1] - p1[1], shape[1], mly, muy)
     i1 = glb.SRC[source1][s1lx:s1ux, s1ly:s1uy, start - z1:stop - z1]
     i2 = glb.SRC[source2][s2lx:s2ux, s2ly:s2uy, start - z2:stop - z2]
     if prepare:
@@ -310,7 +305,7 @@ def shifts_from_tracing(errors, status, new_trajectory_cost=None, cutoff=None):
 def place0(shape, pairs, positions, displacements, qualities, status, smooth,
            min_quality, processes, verbose):
     lo = min(p[2] for p in positions)
-    hi = max(p[2] + glb.SRC[i].shape[2] for i, p in enumerate(positions))
+    hi = max(p[2] + shape[2] for i, p in enumerate(positions))
     n_slices = hi - lo
     if verbose:
         sys.stderr.write('Placement: %d slices\n' % (n_slices))
@@ -325,8 +320,7 @@ def place0(shape, pairs, positions, displacements, qualities, status, smooth,
         s = status[k]
         fix_unaligned(s, d, q)
         l = max(positions[i][2], positions[j][2])
-        u = min(positions[i][2] + glb.SRC[i].shape[2],
-                positions[j][2] + glb.SRC[j].shape[2])
+        u = min(positions[i][2] + shape[2], positions[j][2] + shape[2])
         if smooth:
             valids = s >= VALID
             if min_quality:
@@ -354,20 +348,15 @@ def place0(shape, pairs, positions, displacements, qualities, status, smooth,
 def place1(shape, positions, positions_new, components, smooth, processes,
            verbose):
     n_sources = len(positions)
-    wobble = [
-        np.zeros((glb.SRC[i].shape[2], 2), dtype=int) for i in range(n_sources)
-    ]
-    status = [
-        np.full(glb.SRC[i].shape[2], S_VALID, dtype=int)
-        for i in range(n_sources)
-    ]
+    wobble = [np.zeros((shape[2], 2), dtype=int) for i in range(n_sources)]
+    status = [np.full(shape[2], S_VALID, dtype=int) for i in range(n_sources)]
 
     positions_new = np.array(positions_new)
     for s, components_slice in enumerate(components):
         for c in components_slice:
             if len(c) == 1:
                 i = c[0]
-                if 0 <= s - positions[i][2] < glb.SRC[i].shape[2]:
+                if 0 <= s - positions[i][2] < shape[2]:
                     z = s - positions[i][2]
                     status[i][z] = S_ISOLATED
     components = [[c for c in components_slice if len(c) > 1]
@@ -388,7 +377,7 @@ def place1(shape, positions, positions_new, components, smooth, processes,
     for i in range(n_sources):
         po = positions_optimized[i]
         start = positions[i][2]
-        stop = start + glb.SRC[i].shape[2]
+        stop = start + shape[2]
         wobble[i][:] = po[start:stop]
         finite = np.all(np.isfinite(p[start:stop]), axis=1)
         non_finite = np.logical_not(finite)
@@ -664,13 +653,16 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
         for j, p in enumerate(positions):
             z = c - p[2]
             if 0 <= z < shape0[2] and status[j][z] == S_VALID:
-                s.append(Slice0(j, z, wobble[j][z]))
+                px, py = wobble[j][z]
+                sx, sy = shape0[:2]
+                s.append(Slice0(sx, sy, j, z, px, py))
         if s:
             slices.append((i, Layout1(sources=s)))
     if verbose:
         sys.stderr.write('Stitching: stitching %d sliced layouts\n' %
                          len(coordinates))
-    args = (len(slices), origin[0], origin[1], shape[0], shape[1], verbose)
+    args = (shape0, len(slices), origin[0], origin[1], shape[0], shape[1],
+            verbose)
     if processes == 'serial':
         for sl in slices:
             stitch_slice(*(sl + args))
@@ -681,18 +673,16 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
 
 def _split_region(r, o):
     split = [o]
-    rl, ru = r.lower, r.upper
-    ol, ou = o.lower, o.upper
-    for d in range(2):
-        if rl[d] < ol[d]:
-            l = ol[:d] + rl[d:]
-            u = ou[:d] + (ol[d], ) + ru[d + 1:]
-            split.append(glb.Overlap3(lower=l, upper=u))
-
-        if ou[d] < ru[d]:
-            l = ol[:d] + (ou[d], ) + rl[d + 1:]
-            u = ou[:d] + ru[d:]
-            split.append(glb.Overlap3(lower=l, upper=u))
+    rlx, rly, rux, ruy = *r.lower, *r.upper
+    olx, oly, oux, ouy = *o.lower, *o.upper
+    if rlx < olx:
+        split.append(glb.Overlap3(rlx, rly, olx, ruy))
+    if oux < rux:
+        split.append(glb.Overlap3(oux, rly, rux, ruy))
+    if rly < oly:
+        split.append(glb.Overlap3(olx, rly, oux, oly))
+    if ouy < ruy:
+        split.append(glb.Overlap3(olx, ouy, oux, ruy))
     return split
 
 
@@ -708,7 +698,7 @@ def _add_overlap_region(regions, region):
             ovl = np.max([rc.lower, ra.lower], axis=0)
             ovu = np.min([rc.upper, ra.upper], axis=0)
             if np.all(ovu - ovl - 1 >= 0):
-                ov = glb.Overlap2(ovl, ovu)
+                ov = glb.Overlap2(*ovl, *ovu)
                 split = _split_region(rc, ov)
                 for s in split:
                     s.sources = rc.sources
@@ -730,52 +720,75 @@ def _add_overlap_region(regions, region):
     return regsnew
 
 
-def stitch_slice(slice_id, layout, n_slices, ox, oy, sx, sy, verbose):
+def stitch_slice(slice_id, layout, shape0, n_slices, ox, oy, sx, sy, verbose):
     if verbose and slice_id % max(1, n_slices // 100) == 0:
         sys.stderr.write('Stitching [%d] slice %d / %d\n' %
                          (os.getpid(), slice_id, n_slices))
     axl, ayl = layout.origin
     axu, ayu = layout.upper
-    bxl, byl = ox, oy
     bxu, byu = ox + sx, oy + sy
-    xl = max(axl, bxl)
-    yl = max(ayl, byl)
+    xl = max(axl, ox)
+    yl = max(ayl, oy)
     xu = min(axu, bxu)
     yu = min(ayu, byu)
+    sxl, sxu = xl - axl, xu - axl
+    syl, syu = yl - ayl, yu - ayl
+    fxl, fxu = xl - ox, xu - ox
+    fyl, fyu = yl - oy, yu - oy
     if xu - xl - 1 < 0 or yu - yl - 1 < 0:
         return
 
     regions = []
     for s in layout.sources:
-        region = glb.Overlap1(lower=s.position, shape=s.shape, sources=(s, ))
+        region = glb.Overlap1(lower=s.position,
+                              shape=(shape0[0], shape0[1]),
+                              sources=(s, ))
         regions = _add_overlap_region(regions, region)
     shape = tuple(max(s, 0) for s in layout.shape)
     new_regions = []
-    for i, r in enumerate(regions):
-        r.lower = tuple(p if l < p else l
-                        for l, p in zip(r.lower, layout.origin))
-        r.upper = tuple(p if u < p else u
-                        for u, p in zip(r.upper, layout.origin))
+    for r in regions:
+        r.lower = tuple(p if l < p else l for l, p in zip(r.lower, (axl, ayl)))
+        r.upper = tuple(p if u < p else u for u, p in zip(r.upper, (axl, ayl)))
         if np.all([u > l for u, l in zip(r.upper, r.lower)]):
             new_regions.append(r)
     regions = new_regions
     new_regions = []
-    ps = np.array(layout.origin, dtype=int) + shape
-    for i, r in enumerate(regions):
+    ps = np.array((axl, ayl), dtype=int) + shape
+    for r in regions:
         r.lower = tuple(p if l > p else l for l, p in zip(r.lower, ps))
         r.upper = tuple(p if u > p else u for u, p in zip(r.upper, ps))
         if np.all([u > l for u, l in zip(r.upper, r.lower)]):
             new_regions.append(r)
     regions = new_regions
 
-    sxl, sxu = xl - axl, xu - axl
-    syl, syu = yl - ayl, yu - ayl
-    fxl, fxu = xl - bxl, xu - bxl
-    fyl, fyu = yl - byl, yu - byl
     stitched = np.zeros(shape, dtype='<u2', order='F')
-    strg.stitch_by_function_with_weights(sources=layout.sources,
-                                         position=layout.origin,
-                                         regions=regions,
-                                         stitched=stitched)
+    w = stitch_weights(shape0[0], shape0[1])
+    for r in regions:
+        rxl, ryl = r.lower
+        rxu, ryu = r.upper
+        nsources = len(r.sources)
+        if nsources > 1:
+            rd = np.zeros((nsources, rxu - rxl, ryu - ryl))
+            wd = np.zeros((nsources, rxu - rxl, ryu - ryl))
+            for i, s in enumerate(r.sources):
+                px, py = s.position
+                rd[i] = s[rxl - px:rxu - px, ryl - py:ryu - py]
+                wd[i] = w[rxl - px:rxu - px, ryl - py:ryu - py]
+            rd = np.average(rd, axis=0, weights=wd)
+        else:
+            s = r.sources[0]
+            px, py = s.position
+            rd = s[rxl - px:rxu - px, ryl - py:ryu - py]
+        stitched[rxl - axl:rxu - axl, ryl - ayl:ryu - ayl] = rd
+
     np.copyto(glb.SINK[0][fxl:fxu, fyl:fyu, slice_id], stitched[sxl:sxu,
                                                                 syl:syu], 'no')
+
+
+def stitch_weights(x, y):
+    rx = np.arange(x)
+    ry = np.arange(y)
+    mesh = np.meshgrid(rx, ry, indexing='ij')
+    mesh = [np.min([m, np.max(m) - m], axis=0) for m in mesh]
+    weights = np.min(mesh, axis=0) + 1
+    return weights

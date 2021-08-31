@@ -46,7 +46,6 @@ shifts, qualities = st.align(pairs,
                              max_shifts=[(-20 // sx, 20 // sx),
                                          (-20 // sy, 20 // sy),
                                          (-20 // sz, 20 // sz)],
-                             background=(100, 120),
                              clip=np.iinfo(dtype).max,
                              processes=processes,
                              verbose=verbose)

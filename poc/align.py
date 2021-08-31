@@ -13,10 +13,10 @@ dtype = np.dtype("<u2")
 #processes = multiprocessing.cpu_count()
 processes = 'serial'
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
-di = '/home/lisergey/stride8'
+di = '/home/lisergey/stride4'
 tx, ty = 2, 2
 nx, ny, nz = 2048, 2048, 4299
-sx, sy, sz = 8, 8, 8
+sx, sy, sz = 4, 4, 4
 path = (
     '02x04.raw',
     '02x03.raw',
@@ -64,14 +64,13 @@ glb.SRC[:] = (np.memmap(os.path.join(di, e),
 #                              max_shifts=[(-80 // sx, 80 // sx),
 #                                          (-80 // sy, 80 // sy),
 #                                          (-120 // sz, 120 // sz)],
-#                              background=(100, 120),
 #                              clip=25000,
 #                              processes=processes,
 #                              verbose=verbose)
 # positions = st.place(pairs, positions, shifts)
-
-positions = [(4, 0, 12), (0, 203, 13), (206, 5, 0), (202, 208, 0)]
+positions = [(8, 0, 24), (0, 406, 26), (412, 10, 0), (416, 416, 0)]
 displacements, qualities, status = stw.align(
+    (kx, ky, kz),
     pairs,
     positions,
     max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),

@@ -63,7 +63,6 @@ st.align(layout.alignments,
          depth=[434 // sx, 425 // sy, None],
          max_shifts=[(-80 // sx, 80 // sx), (-80 // sy, 80 // sy),
                      (-120 // sz, 120 // sz)],
-         background=(100, 120),
          clip=25000,
          processes=processes,
          verbose=True)

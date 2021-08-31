@@ -39,16 +39,14 @@ def padding0(s1, p2, s2, minx, maxx):
     return o1l, o1u, o2l - p2, o2u - p2, pad1, pad2, np1, np2, roil, roiu
 
 
-def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
+def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
                verbose):
     if verbose:
         sys.stderr.write('Rigid [%d] start align_pair\n' % os.getpid())
     depth = depth[axis]
     max_shifts = max_shifts[:axis] + max_shifts[axis + 1:]
-    s1 = glb.SRC[src1].shape
-    s2 = glb.SRC[src2].shape
-    d1 = max(0, s1[axis] - depth)
-    d2 = min(depth, s2[axis])
+    d1 = max(0, shape[axis] - depth)
+    d2 = min(depth, shape[axis])
     if axis == 0:
         mip1 = np.max(glb.SRC[src1][d1:, :, :], axis=axis)
         mip2 = np.max(glb.SRC[src2][:d2, :, :], axis=axis)
@@ -119,9 +117,7 @@ def align_pair(src1, src2, shift, axis, depth, max_shifts, clip, background,
 
 
 def align(shape, pairs, positions, tile_position, depth, max_shifts, clip,
-          background, processes, verbose):
-    args = (depth, max_shifts, clip, background, verbose)
-
+          processes, verbose):
     def a2arg(i, j):
         axis = 1 if tile_position[i][0] == tile_position[j][0] else 0
         shift = (positions[i][0] - positions[j][0],
@@ -129,6 +125,7 @@ def align(shape, pairs, positions, tile_position, depth, max_shifts, clip,
                  positions[i][2] - positions[j][2])
         return i, j, shift, axis
 
+    args = (shape, depth, max_shifts, clip, verbose)
     if processes == 'serial':
         results = [align_pair(*(a2arg(i, j) + args)) for i, j in pairs]
     else:
@@ -154,37 +151,10 @@ def place(pairs, positions, shifts):
             if j > 0:
                 M[k, (j - 1) * 3 + d] = 1
             k += 1
-    pos = np.dot(np.linalg.pinv(M), s)
-    pos = np.hstack([np.zeros(3), pos])
-    pos = np.reshape(pos, (-1, 3))
-    pos = np.asarray(np.round(pos), dtype=int)
-    pos -= np.min(pos, axis=0)
-    return [tuple(p) for p in pos]
-
-
-def stitch_weights(shape):
-    ranges = [np.arange(s) for s in shape]
-    mesh = np.meshgrid(*ranges, indexing='ij')
-    mesh = [np.min([m, np.max(m) - m], axis=0) for m in mesh]
-    weights = np.min(mesh, axis=0) + 1
-    return weights
-
-
-def stitch_by_function_with_weights(sources, position, regions, stitched):
-    shapes = [s.shape for s in sources]
-    w = stitch_weights(shapes[0])
-    for r in regions:
-        nsources = len(r.sources)
-        if nsources > 1:
-            rd = np.zeros((nsources, ) + r.shape)
-            wd = np.zeros((nsources, ) + r.shape)
-            for i, s, sl in zip(
-                    range(len(r.sources)), r.sources,
-                    glb.source_slicings0(r.sources, r.lower, r.upper)):
-                rd[i] = s[sl]
-                wd[i] = w[sl]
-            rd = np.average(rd, axis=0, weights=wd)
-        else:
-            s = r.sources[0]
-            rd = s[glb.local_slicing0(r.sources[0].position, r.lower, r.upper)]
-        stitched[glb.local_slicing0(position, r.lower, r.upper)] = rd
+    pos, residuals, rank, sing = np.linalg.lstsq(M, s, rcond=None)
+    pos = (0, 0, 0) + tuple(round(p) for p in pos)
+    xx, yy, zz = pos[::3], pos[1::3], pos[2::3]
+    mx = min(xx)
+    my = min(yy)
+    mz = min(zz)
+    return tuple((x - mx, y - my, z - mz) for x, y, z in zip(xx, yy, zz))

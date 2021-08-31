@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def cdist(a, b):
     m = len(a)
     n = len(b)
