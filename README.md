@@ -39,6 +39,12 @@ Open <tt>390x390x200le.raw</tt> in ImageJ.
 
 <p align="center"><img src="img/sample.png" alt="sample output"/></p>
 
+<h2>Similar programs</h2>
+
+<a href="https://imagej.net/plugins/bigstitcher">BigStitcher</a></br>
+<a href="https://abria.github.io/TeraStitcher">TeraStitcher</a></br>
+<a href="https://christophkirst.github.io/ClearMap2Documentation/html/home.html">ClearMap</a>
+
 <h2>References</h2>
 
 1. Kirst, C., Skriabine, S., Vieites-Prado, A., Topilko, T., Bertin,
