@@ -3,7 +3,7 @@
 <h2>Introduction</h2> A scalable implementation of <a
 href="https://christophkirst.github.io/ClearMap2Documentation/html/wobblystitcher.html#wobblystitcher">WobblyStitcher</a>
 
-<h2>Dependencies</h1>
+<h2>Dependencies</h2>
 <pre>
 $ python -m pip install numpy scikit-image
 </pre>
