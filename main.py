@@ -39,7 +39,8 @@ for x in range(tx):
             pairs.append((i, (x + 1) * ty + y))
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
-shifts, qualities = st.align(pairs,
+shifts, qualities = st.align((kx, ky, kz),
+                             pairs,
                              positions,
                              tile_positions,
                              depth=(20 // sx, 20 // sy, None),
@@ -51,6 +52,7 @@ shifts, qualities = st.align(pairs,
                              verbose=verbose)
 positions = st.place(pairs, positions, shifts)
 displacements, qualities, status = stw.align(
+    (kx, ky, kz),
     pairs,
     positions,
     max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
@@ -58,7 +60,8 @@ displacements, qualities, status = stw.align(
     find_shifts=dict(cutoff=3 * np.sqrt(2) / sx),
     processes=processes,
     verbose=verbose)
-positions_new, components = stw.place0(pairs,
+positions_new, components = stw.place0((kx, ky, kz),
+                                       pairs,
                                        positions,
                                        displacements,
                                        qualities,
@@ -71,7 +74,8 @@ positions_new, components = stw.place0(pairs,
                                        processes=processes,
                                        verbose=verbose)
 
-wobble, status = stw.place1(positions,
+wobble, status = stw.place1((kx, ky, kz),
+                            positions,
                             positions_new,
                             components,
                             smooth=dict(method='window',
