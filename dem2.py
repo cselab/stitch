@@ -17,8 +17,10 @@ sx = sy = sz = 8
 
 
 def open(path):
-    return np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
-                     order='F')[::sx, ::sy, ::sz]
+    a = np.memmap(path, dtype, 'r+', 0, (nx, ny, nz),
+                  order='F')[::sx, ::sy, ::sz]
+    a.setflags(write=False)
+    return a
 
 
 def tile(g):
@@ -95,7 +97,7 @@ positions_new, components = stw.place0((kx, ky, kz),
                                        status,
                                        smooth=dict(method='window',
                                                    window='hamming',
-                                                   window_length=100,
+                                                   window_length=100//sx,
                                                    binary=None),
                                        min_quality=-np.inf,
                                        processes=processes,
@@ -107,7 +109,7 @@ wobble, status = stw.place1((kx, ky, kz),
                             components,
                             smooth=dict(method='window',
                                         window='bartlett',
-                                        window_length=20,
+                                        window_length=20//sx,
                                         binary=10),
                             processes=processes,
                             verbose=verbose)
