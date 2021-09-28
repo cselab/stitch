@@ -228,7 +228,7 @@ def detect_local_minima(error):
 def shifts_from_tracing(errors, status, new_trajectory_cost=None, cutoff=None):
     n = len(status)
     qualities = -np.inf * np.ones(n)
-    shifts = np.zeros((n, errors.ndim - 1), dtype=int)
+    shifts = np.zeros((n, 2), dtype=int)
     measured = np.where(status == MEASURED)[0]
     if len(measured) == 0:
         return shifts, qualities, status
