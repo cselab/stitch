@@ -7,7 +7,7 @@ of <a href="https://christophkirst.github.io/ClearMap2Documentation/html/wobblys
 
 <h2>Dependencies</h2>
 <pre>
-$ python -m pip install numpy scikit-image
+$ python3 -m pip install numpy scikit-image
 </pre>
 
 
