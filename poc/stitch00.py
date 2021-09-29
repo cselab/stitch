@@ -1,6 +1,5 @@
 import stitch.Rigid as st
 import stitch.Wobbly as stw
-import mmap
 import multiprocessing
 import numpy as np
 import os

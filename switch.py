@@ -1,6 +1,4 @@
 import glob
-import mmap
-import multiprocessing
 import numpy as np
 import os
 import stitch.glb as glb
@@ -8,41 +6,22 @@ import stitch.Rigid as st
 import stitch.Wobbly as stw
 import sys
 
-
 def open(path):
-    a = np.memmap(path, dtype, 'r+', 0, (nx, ny, nz),
-                  order='F')[::sx, ::sy, ::sz]
-    a.setflags(write=False)
-    return a
-
-
-def tile(path):
-    assert path
-    lst = []
-    for p in path:
-        for e in os.path.basename(p).split('_'):
-            if len(e) > 0 and e[0] == 'X':
-                x = int(e[1:])
-            if len(e) > 0 and e[0] == 'Y':
-                y = int(e[1:])
-        lst.append(((x, y), p))
-    lst.sort(reverse=True)
-    tile_positions, path = zip(*lst)
-    x, y = zip(*tile_positions)
-    tx = len(set(x))
-    ty = len(set(y))
-    return path, tx, ty
-
-
+    return np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
+                     order='F')[::sx, ::sy, ::sz]
 me = "switch.py"
-ou = "."
 sx = sy = sz = 4
 verbose = True
 dtype = np.dtype("<u2")
 nx, ny, nz = 2048, 2048, 615
-path, tx, ty = tile(sys.argv[1:])
+tx, ty = 2, 2
+path = (
+    "4X4_X2200_Y-77900_488_nm_2x_Right_000009.raw",
+    "4X4_X2200_Y-83408_488_nm_2x_Right_000013.raw",
+    "4X4_X-2808_Y-77900_488_nm_2x_Right_000001.raw",
+    "4X4_X-2808_Y-83408_488_nm_2x_Right_000005.raw",
+)
 processes = (tx - 1) * ty + tx * (ty - 1)
-sys.stderr.write("%s: processes = %s\n" % (me, processes))
 glb.SRC[:] = (open(e) for e in path)
 kx, ky, kz = glb.SRC[0].shape
 ox = 205 // sx
@@ -106,8 +85,7 @@ wobble, status = stw.place1((kx, ky, kz),
                             verbose=verbose)
 
 ux, uy, uz = stw.shape_wobbly((kx, ky, kz), positions, wobble)
-
-output = os.path.join(ou, "%dx%dx%dle.raw" % (ux, uy, uz))
+output = "%dx%dx%dle.raw" % (ux, uy, uz)
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
 stw.stitch((kx, ky, kz), positions, wobble, status, processes, verbose=verbose)

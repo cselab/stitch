@@ -1,5 +1,4 @@
 import glob
-import mmap
 import multiprocessing
 import numpy as np
 import os

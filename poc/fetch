@@ -1,21 +1,9 @@
 b='https://drive.switch.ch/index.php/s/ZLFUraTmwvZGFt7'
 l='
-4X4_X2200_Y-77900_488_nm_2x_Left_000008.raw
-4X4_X2200_Y-77900_488_nm_2x_Left_000008.raw_meta.txt
 4X4_X2200_Y-77900_488_nm_2x_Right_000009.raw
-4X4_X2200_Y-77900_488_nm_2x_Right_000009.raw_meta.txt
-4X4_X2200_Y-83408_488_nm_2x_Left_000012.raw
-4X4_X2200_Y-83408_488_nm_2x_Left_000012.raw_meta.txt
 4X4_X2200_Y-83408_488_nm_2x_Right_000013.raw
-4X4_X2200_Y-83408_488_nm_2x_Right_000013.raw_meta.txt
-4X4_X-2808_Y-77900_488_nm_2x_Left_000000.raw
-4X4_X-2808_Y-77900_488_nm_2x_Left_000000.raw_meta.txt
 4X4_X-2808_Y-77900_488_nm_2x_Right_000001.raw
-4X4_X-2808_Y-77900_488_nm_2x_Right_000001.raw_meta.txt
-4X4_X-2808_Y-83408_488_nm_2x_Left_000004.raw
-4X4_X-2808_Y-83408_488_nm_2x_Left_000004.raw_meta.txt
 4X4_X-2808_Y-83408_488_nm_2x_Right_000005.raw
-4X4_X-2808_Y-83408_488_nm_2x_Right_000005.raw_meta.txt
 '
 for i in $l
 do printf 'curl -so '\''%s'\'' '\''%s/download?path=%%2F&files=%s'\''\n' "$i" "$b" "$i"
