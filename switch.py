@@ -10,38 +10,47 @@ import sys
 
 
 def open(path):
-    return np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
-                     order='F')[::sx, ::sy, ::sz]
+    a = np.memmap(path, dtype, 'r+', 0, (nx, ny, nz),
+                  order='F')[::sx, ::sy, ::sz]
+    a.setflags(write=False)
+    return a
 
 
-def key(f):
-    x = f.split('_')[-7][1:]
-    y = f.split('_')[-6][1:]
-    return -int(x), -int(y)
+def tile(path):
+    assert path
+    lst = []
+    for p in path:
+        for e in os.path.basename(p).split('_'):
+            if len(e) > 0 and e[0] == 'X':
+                x = int(e[1:])
+            if len(e) > 0 and e[0] == 'Y':
+                y = int(e[1:])
+        lst.append(((x, y), p))
+    lst.sort(reverse=True)
+    tile_positions, path = zip(*lst)
+    x, y = zip(*tile_positions)
+    tx = len(set(x))
+    ty = len(set(y))
+    return path, tx, ty
 
 
-di = '/media/user/Daten1/ADf_1.2.HC_hFTAA_SMA-Cy3_Pdxl-647/'
-
-me = "dem.py"
+me = "switch.py"
+ou = "."
+sx = sy = sz = 4
 verbose = True
 dtype = np.dtype("<u2")
-processes = 22
+nx, ny, nz = 2048, 2048, 615
+path, tx, ty = tile(sys.argv[1:])
+processes = (tx - 1) * ty + tx * (ty - 1)
 sys.stderr.write("%s: processes = %s\n" % (me, processes))
-tx, ty = 3, 5
-nx, ny, nz = 2048, 2048, 4299
-sx = sy = sz = 16
-path = glob.glob(di + '*640*.raw')
-path.sort(key=key)
 glb.SRC[:] = (open(e) for e in path)
-for p in path:
-    print(p)
-
 kx, ky, kz = glb.SRC[0].shape
-ox = 434 // sx
-oy = 425 // sy
+ox = 205 // sx
+oy = 205 // sy
+of = 2
+tile_positions = []
 positions = []
 pairs = []
-tile_positions = []
 for x in range(tx):
     for y in range(ty):
         tile_positions.append((x, y))
@@ -55,10 +64,10 @@ shifts, qualities = st.align((kx, ky, kz),
                              pairs,
                              positions,
                              tile_positions,
-                             depth=[434 // sx, 425 // sy, None],
-                             max_shifts=[(-80 // sx, 80 // sx),
-                                         (-80 // sy, 80 // sy),
-                                         (-120 // sz, 120 // sz)],
+                             depth=[ox // of, oy // of, None],
+                             max_shifts=[(-ox // of, ox // of),
+                                         (-oy // of, oy // of),
+                                         (-oy // of, oy // of)],
                              clip=25000,
                              processes=processes,
                              verbose=verbose)
@@ -67,7 +76,7 @@ displacements, qualities, status = stw.align(
     (kx, ky, kz),
     pairs,
     positions,
-    max_shifts=((-20 // sx, 20 // sx), (-20 // sy, 20 // sy)),
+    max_shifts=((-ox // of, ox // of), (-oy // of, oy // of)),
     prepare=True,
     find_shifts=dict(cutoff=3 * np.sqrt(2) / sx),
     processes=processes,
@@ -85,7 +94,6 @@ positions_new, components = stw.place0((kx, ky, kz),
                                        min_quality=-np.inf,
                                        processes=processes,
                                        verbose=verbose)
-
 wobble, status = stw.place1((kx, ky, kz),
                             positions,
                             positions_new,
@@ -98,11 +106,9 @@ wobble, status = stw.place1((kx, ky, kz),
                             verbose=verbose)
 
 ux, uy, uz = stw.shape_wobbly((kx, ky, kz), positions, wobble)
-output = "%dx%dx%dle.raw" % (ux, uy, uz)
+
+output = os.path.join(ou, "%dx%dx%dle.raw" % (ux, uy, uz))
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
 stw.stitch((kx, ky, kz), positions, wobble, status, processes, verbose=verbose)
 sys.stderr.write("%s\n" % output)
-
-#import poc.pgm
-#poc.pgm.pgm("a.pgm", sink[:, :, uz//2])
