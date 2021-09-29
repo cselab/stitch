@@ -16,17 +16,17 @@ dtype = np.dtype("<u2")
 nx, ny, nz = 2048, 2048, 615
 tx, ty = 2, 2
 path = (
-    "4X4_X2200_Y-77900_488_nm_2x_Right_000009.raw",
-    "4X4_X2200_Y-83408_488_nm_2x_Right_000013.raw",
     "4X4_X-2808_Y-77900_488_nm_2x_Right_000001.raw",
     "4X4_X-2808_Y-83408_488_nm_2x_Right_000005.raw",
+    "4X4_X2200_Y-77900_488_nm_2x_Right_000009.raw",
+    "4X4_X2200_Y-83408_488_nm_2x_Right_000013.raw",
 )
 processes = (tx - 1) * ty + tx * (ty - 1)
 glb.SRC[:] = (open(e) for e in path)
 kx, ky, kz = glb.SRC[0].shape
 ox = 205 // sx
 oy = 205 // sy
-of = 2
+of = 4
 tile_positions = []
 positions = []
 pairs = []
