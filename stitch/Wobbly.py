@@ -191,7 +191,7 @@ def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare,
         wssd = wssd[roilx:roiux, roily:roiuy]
         errors[a - start] = np.abs(wssd / nrm)
         status[a - start] = MEASURED
-    shifts, qualities, status = shifts_from_tracing(errors, status,
+    shifts, qualities, status = shifts_from_tracing(errors, status, verbose,
                                                     **find_shifts)
     shifts += (mlx, mly)
     return shifts, qualities, status
@@ -225,7 +225,11 @@ def detect_local_minima(error):
     return shifts, qualities
 
 
-def shifts_from_tracing(errors, status, new_trajectory_cost=None, cutoff=None):
+def shifts_from_tracing(errors,
+                        status,
+                        verbose,
+                        new_trajectory_cost=None,
+                        cutoff=None):
     n = len(status)
     qualities = -np.inf * np.ones(n)
     shifts = np.zeros((n, 2), dtype=int)
@@ -261,8 +265,10 @@ def shifts_from_tracing(errors, status, new_trajectory_cost=None, cutoff=None):
         ]
         n_measured += n_measured_se
 
-        trajectories = trk.track_positions(
-            positions, new_trajectory_cost=new_trajectory_cost, cutoff=cutoff)
+        trajectories = trk.track_positions(positions,
+                                           new_trajectory_cost,
+                                           cutoff,
+                                           verbose=verbose)
         n_opt = 0
         t_opt = []
         while n_opt < n_measured_se:

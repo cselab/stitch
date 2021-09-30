@@ -1,26 +1,53 @@
+import math
 import numpy as np
+import os
+import sys
 
 
-def cdist(a, b):
+def cdist(a, b, cutoff):
     m = len(a)
     n = len(b)
     dist = np.empty((m, n))
-    for i in range(m):
-        x, y = a[i]
-        for j in range(n):
-            p, q = b[j]
-            dist[i, j] = (x - p)**2 + (y - q)**2
-    return np.sqrt(dist)
+    dist.fill(np.inf)
+    xlo, ylo = np.min(b, axis=0)
+    xhi, yhi = np.max(b, axis=0)
+    cx = math.ceil((xhi - xlo) / cutoff)
+    cy = math.ceil((yhi - ylo) / cutoff)
+    D = {}
+    for i, (x, y) in enumerate(b):
+        u = math.floor((x - xlo) / cutoff)
+        v = math.floor((y - ylo) / cutoff)
+        if (u, v) not in D:
+            D[u, v] = []
+        D[u, v].append(i)
+    cutoff2 = cutoff * cutoff
+    for i, (x, y) in enumerate(a):
+        u0 = math.floor((x - xlo) / cutoff)
+        v0 = math.floor((y - ylo) / cutoff)
+        for du in (-1, 0, 1):
+            for dv in (-1, 0, 1):
+                u = u0 + du
+                v = v0 + dv
+                if (u, v) in D:
+                    for j in D[u, v]:
+                        p, q = b[j]
+                        d = (x - p)**2 + (y - q)**2
+                        if d < cutoff2:
+                            dist[i, j] = math.sqrt(d)
+    return dist
 
 
-def track_positions(positions, new_trajectory_cost, cutoff):
+def track_positions(positions, new_trajectory_cost, cutoff, verbose):
     n_steps = len(positions) - 1
-    matches = [
-        match(positions[i],
-              positions[i + 1],
-              new_trajectory_cost=new_trajectory_cost,
-              cutoff=cutoff) for i in range(n_steps)
-    ]
+    matches = [None] * n_steps
+    for i in range(n_steps):
+        if verbose and i % max(n_steps // 100, 1) == 0:
+            sys.stderr.write('Wobbly [%d] tracking: %d / %d\n' %
+                             (os.getpid(), i, n_steps))
+        matches[i] = match(positions[i],
+                           positions[i + 1],
+                           new_trajectory_cost,
+                           cutoff=cutoff)
     n_pre = len(positions[0])
     trajectories = [[(0, i)] for i in range(n_pre)]
     active = [i for i in range(n_pre)]
@@ -47,9 +74,7 @@ def track_positions(positions, new_trajectory_cost, cutoff):
 
 
 def match(positions_pre, positions_post, new_trajectory_cost, cutoff):
-    cost = cdist(positions_pre, positions_post)
-    if cutoff:
-        cost[cost > cutoff] = np.inf
+    cost = cdist(positions_pre, positions_post, cutoff)
     if new_trajectory_cost is None:
         new_trajectory_cost = np.max(cost) + 1.0
     cost = np.pad(cost, [(0, 1), (0, 1)],

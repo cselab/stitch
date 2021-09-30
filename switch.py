@@ -6,9 +6,12 @@ import stitch.Rigid as st
 import stitch.Wobbly as stw
 import sys
 
+
 def open(path):
     return np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
                      order='F')[::sx, ::sy, ::sz]
+
+
 me = "switch.py"
 sx = sy = sz = 4
 verbose = True
