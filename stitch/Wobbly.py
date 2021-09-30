@@ -212,8 +212,8 @@ def norm_coef(a):
     return b0, b1
 
 
-def detect_local_minima(error):
-    minima = skif.peak_local_max(-error, min_distance=1, exclude_border=True)
+def detect_local_minima(error, min_distance):
+    minima = skif.peak_local_max(-error, min_distance, exclude_border=True)
 
     if len(minima) > 0:
         shifts = [tuple(m) for m in minima]
@@ -229,14 +229,15 @@ def shifts_from_tracing(errors,
                         status,
                         verbose,
                         new_trajectory_cost=None,
-                        cutoff=None):
+                        cutoff=None,
+                        min_distance=1):
     n = len(status)
     qualities = -np.inf * np.ones(n)
     shifts = np.zeros((n, 2), dtype=int)
     measured = np.where(status == MEASURED)[0]
     if len(measured) == 0:
         return shifts, qualities, status
-    mins = [detect_local_minima(error) for error in errors[measured]]
+    mins = [detect_local_minima(error, min_distance) for error in errors[measured]]
     for i, m in zip(measured, mins):
         if len(m[1]) == 1 and not np.isfinite(m[1][0]):
             status[i] = NOMINIMA

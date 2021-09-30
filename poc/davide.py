@@ -66,7 +66,7 @@ displacements, qualities, status = stw.align(
     positions,
     max_shifts=((-ox // of, ox // of), (-oy // of, oy // of)),
     prepare=True,
-    find_shifts=dict(cutoff=3 * np.sqrt(2) / sx),
+    find_shifts=dict(cutoff=3 * np.sqrt(2) / sx, min_distance=8 // sx),
     processes=processes,
     verbose=verbose)
 positions_new, components = stw.place0((kx, ky, kz),
