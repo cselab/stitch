@@ -94,35 +94,28 @@ def match(positions_pre, positions_post, new_trajectory_cost, cutoff):
     A[osize, s < 1] = True
     A[osize, nsize] = True
     Cs = np.where(cost[:-1, :-1].flatten() < np.inf)
-    finished = False
-    while not finished:
-        A, finished = _do_one_move(A, cost, Cs)
+    while True:
+        osize = A.shape[0] - 1
+        nsize = A.shape[1] - 1
+        todo = np.intersect1d(
+            np.where(np.logical_not(A[:osize, :nsize].flatten()))[0], Cs)
+        if len(todo) == 0:
+            break
+        iCand, jCand = np.unravel_index(todo, (osize, nsize))
+        yCand = [np.where(A[ic, :])[0][0] for ic in iCand]
+        xCand = [np.where(A[:, jc])[0][0] for jc in jCand]
+        cRed = [
+            cost[i, j] + cost[x, y] - cost[i, y] - cost[x, j]
+            for i, j, x, y in zip(iCand, jCand, xCand, yCand)
+        ]
+        rMin = np.argmin(cRed)
+        rCost = cRed[rMin]
+        if rCost < -1e-10:
+            A[iCand[rMin], jCand[rMin]] = 1
+            A[xCand[rMin], jCand[rMin]] = 0
+            A[iCand[rMin], yCand[rMin]] = 0
+            A[xCand[rMin], yCand[rMin]] = 1
+        else:
+            break
     return {i: j for i, j in zip(*np.where(A[:-1, :]))}
 
-
-
-def _do_one_move(A, cost, Cs):
-    osize = A.shape[0] - 1
-    nsize = A.shape[1] - 1
-    todo = np.intersect1d(
-        np.where(np.logical_not(A[:osize, :nsize].flatten()))[0], Cs)
-    if len(todo) == 0:
-        return A, True
-    iCand, jCand = np.unravel_index(todo, (osize, nsize))
-    yCand = [np.where(A[ic, :])[0][0] for ic in iCand]
-    xCand = [np.where(A[:, jc])[0][0] for jc in jCand]
-    cRed = [
-        cost[i, j] + cost[x, y] - cost[i, y] - cost[x, j]
-        for i, j, x, y in zip(iCand, jCand, xCand, yCand)
-    ]
-    rMin = np.argmin(cRed)
-    rCost = cRed[rMin]
-    if rCost < -1e-10:
-        A[iCand[rMin], jCand[rMin]] = 1
-        A[xCand[rMin], jCand[rMin]] = 0
-        A[iCand[rMin], yCand[rMin]] = 0
-        A[xCand[rMin], yCand[rMin]] = 1
-        finished = False
-    else:
-        finished = True
-    return A, finished
