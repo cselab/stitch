@@ -1,0 +1,31 @@
+import numpy as np
+import os
+import poc.pgm
+import re
+import sys
+
+me = "stride"
+path = sys.argv[1]
+base = os.path.basename(path)
+parts = base.split("x")
+sx = sy = sz = 4
+if len(parts) < 3:
+    sys.stderr.write("%s: wrong path '%s'\n" % (me, path))
+    sys.exit(1)
+try:
+    nx = int(parts[0])
+    ny = int(parts[1])
+    nz = int(re.sub('[^0-9].*', "", parts[2]))
+except ValueError:
+    sys.stderr.write("%s: fail to parse '%s'\n" % (me, path))
+    sys.exit(1)
+    print(nx, ny, nz)
+
+dtype = np.dtype("<u2")
+a = np.memmap(path, dtype, 'r', 0, (nx, ny, nz), order='F')[::sx, ::sy, ::sz]
+kx, ky, kz = a.shape
+
+output = "%dx%dx%dle.raw" % (kx, ky, kz)
+b = np.memmap(output, dtype, 'w+', 0, (kx, ky, kz), order='F')
+np.copyto(b, a)
+sys.stderr.write("%s\n" % output)
