@@ -80,20 +80,6 @@ def match(positions_pre, positions_post, new_trajectory_cost, cutoff):
     cost = np.pad(cost, [(0, 1), (0, 1)],
                   'constant',
                   constant_values=new_trajectory_cost)
-    A = optimal_association_matrix(cost)
-    return {i: j for i, j in zip(*np.where(A[:-1, :]))}
-
-
-def optimal_association_matrix(cost):
-    A = _init_association_matrix(cost)
-    Cs = np.where(cost[:-1, :-1].flatten() < np.inf)
-    finished = False
-    while not finished:
-        A, finished = _do_one_move(A, cost, Cs)
-    return A
-
-
-def _init_association_matrix(cost):
     osize = cost.shape[0] - 1
     nsize = cost.shape[1] - 1
     A = np.zeros((osize + 1, nsize + 1), dtype=bool)
@@ -107,10 +93,15 @@ def _init_association_matrix(cost):
     s = np.sum(A, axis=0)
     A[osize, s < 1] = True
     A[osize, nsize] = True
-    return A
+    Cs = np.where(cost[:-1, :-1].flatten() < np.inf)
+    finished = False
+    while not finished:
+        A, finished = _do_one_move(A, cost, Cs)
+    return {i: j for i, j in zip(*np.where(A[:-1, :]))}
 
 
-def _do_one_move(A, C, Cs):
+
+def _do_one_move(A, cost, Cs):
     osize = A.shape[0] - 1
     nsize = A.shape[1] - 1
     todo = np.intersect1d(
@@ -121,7 +112,7 @@ def _do_one_move(A, C, Cs):
     yCand = [np.where(A[ic, :])[0][0] for ic in iCand]
     xCand = [np.where(A[:, jc])[0][0] for jc in jCand]
     cRed = [
-        C[i, j] + C[x, y] - C[i, y] - C[x, j]
+        cost[i, j] + cost[x, y] - cost[i, y] - cost[x, j]
         for i, j, x, y in zip(iCand, jCand, xCand, yCand)
     ]
     rMin = np.argmin(cRed)
