@@ -44,10 +44,13 @@ def track_positions(positions, new_trajectory_cost, cutoff, verbose):
         if verbose and i % max(n_steps // 100, 1) == 0:
             sys.stderr.write('Wobbly [%d] tracking: %d / %d\n' %
                              (os.getpid(), i, n_steps))
-        matches[i] = match(positions[i],
-                           positions[i + 1],
-                           new_trajectory_cost,
-                           cutoff=cutoff)
+        cost = cdist(positions[i], positions[i + 1], cutoff)
+        if new_trajectory_cost is None:
+            new_trajectory_cost = np.max(cost) + 1.0
+        cost = np.pad(cost, [(0, 1), (0, 1)],
+                      'constant',
+                      constant_values=new_trajectory_cost)
+        matches[i] = match(cost)
     n_pre = len(positions[0])
     trajectories = [[(0, i)] for i in range(n_pre)]
     active = [i for i in range(n_pre)]
@@ -73,13 +76,7 @@ def track_positions(positions, new_trajectory_cost, cutoff, verbose):
     return trajectories
 
 
-def match(positions_pre, positions_post, new_trajectory_cost, cutoff):
-    cost = cdist(positions_pre, positions_post, cutoff)
-    if new_trajectory_cost is None:
-        new_trajectory_cost = np.max(cost) + 1.0
-    cost = np.pad(cost, [(0, 1), (0, 1)],
-                  'constant',
-                  constant_values=new_trajectory_cost)
+def match(cost):
     osize = cost.shape[0] - 1
     nsize = cost.shape[1] - 1
     A = np.zeros((osize + 1, nsize + 1), dtype=bool)
@@ -95,8 +92,6 @@ def match(positions_pre, positions_post, new_trajectory_cost, cutoff):
     A[osize, nsize] = True
     Cs = np.where(cost[:-1, :-1].flatten() < np.inf)
     while True:
-        osize = A.shape[0] - 1
-        nsize = A.shape[1] - 1
         todo = np.intersect1d(
             np.where(np.logical_not(A[:osize, :nsize].flatten()))[0], Cs)
         if len(todo) == 0:
@@ -118,4 +113,3 @@ def match(positions_pre, positions_post, new_trajectory_cost, cutoff):
         else:
             break
     return {i: j for i, j in zip(*np.where(A[:-1, :]))}
-
