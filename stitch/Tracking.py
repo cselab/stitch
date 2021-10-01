@@ -42,8 +42,8 @@ def track_positions(positions, new_trajectory_cost, cutoff, verbose):
     matches = [None] * n_steps
     for i in range(n_steps):
         if verbose and i % max(n_steps // 100, 1) == 0:
-            sys.stderr.write('Wobbly [%d] tracking: %d / %d\n' %
-                             (os.getpid(), i, n_steps))
+            sys.stderr.write('Wobbly [%d] tracking: %d / %d: patterns: %d %d\n' %
+                             (os.getpid(), i, n_steps, len(positions[i]), len(positions[i + 1])))
         cost = cdist(positions[i], positions[i + 1], cutoff)
         if new_trajectory_cost is None:
             new_trajectory_cost = np.max(cost) + 1.0
