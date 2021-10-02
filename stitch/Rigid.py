@@ -47,6 +47,8 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
     max_shifts = max_shifts[:axis] + max_shifts[axis + 1:]
     d1 = max(0, shape[axis] - depth)
     d2 = min(depth, shape[axis])
+    if verbose:
+        sys.stderr.write('Rigid [%d] MIP\n' % os.getpid())
     if axis == 0:
         mip1 = np.max(glb.SRC[src1][d1:, :, :], axis=axis)
         mip2 = np.max(glb.SRC[src2][:d2, :, :], axis=axis)
@@ -72,6 +74,8 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
     i2 = np.asarray(i2, dtype=float)
     i1[i1 > clip] = clip
     i2[i2 > clip] = clip
+    if verbose:
+        sys.stderr.write('Rigid [%d] FFT\n' % os.getpid())
 
     i1 = np.pad(i1, (pad1x, pad1y), 'constant')
     i2 = np.pad(i2, (pad2x, pad2y), 'constant')
