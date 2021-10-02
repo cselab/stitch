@@ -42,7 +42,7 @@ def padding0(s1, p2, s2, minx, maxx):
 def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
                verbose):
     if verbose:
-        sys.stderr.write('Rigid [%d] start align_pair\n' % os.getpid())
+        sys.stderr.write('Rigid [%d] start align_pair: %d %d\n' % os.getpid(), src1, src2)
     depth = depth[axis]
     max_shifts = max_shifts[:axis] + max_shifts[axis + 1:]
     d1 = max(0, shape[axis] - depth)
