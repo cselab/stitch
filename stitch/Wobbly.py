@@ -237,7 +237,9 @@ def shifts_from_tracing(errors,
     measured = np.where(status == MEASURED)[0]
     if len(measured) == 0:
         return shifts, qualities, status
-    mins = [detect_local_minima(error, min_distance) for error in errors[measured]]
+    mins = [
+        detect_local_minima(error, min_distance) for error in errors[measured]
+    ]
     for i, m in zip(measured, mins):
         if len(m[1]) == 1 and not np.isfinite(m[1][0]):
             status[i] = NOMINIMA

@@ -42,7 +42,8 @@ def padding0(s1, p2, s2, minx, maxx):
 def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
                verbose):
     if verbose:
-        sys.stderr.write('Rigid [%d] start align_pair: %d %d\n' % (os.getpid(), src1, src2))
+        sys.stderr.write('Rigid [%d] start align_pair: %d %d\n' %
+                         (os.getpid(), src1, src2))
     depth = depth[axis]
     max_shifts = max_shifts[:axis] + max_shifts[axis + 1:]
     d1 = max(0, shape[axis] - depth)
@@ -58,7 +59,8 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
         mip2 = np.max(glb.SRC[src2][:, :d2, :], axis=axis)
         shift = shift[0], shift[2]
     if verbose:
-        sys.stderr.write('Rigid [%d] MIP shapes [%d %d] [%d %d]\n' % (os.getpid(), *mip1.shape, *mip2.shape))
+        sys.stderr.write('Rigid [%d] MIP shapes [%d %d] [%d %d]\n' %
+                         (os.getpid(), *mip1.shape, *mip2.shape))
     s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = padding0(
         mip1.shape[0], shift[0], mip1.shape[0], max_shifts[0][0],
         max_shifts[0][1])
