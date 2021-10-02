@@ -52,21 +52,17 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
         sys.stderr.write('Rigid [%d] start MIP\n' % os.getpid())
     if axis == 0:
         shift = shift[1], shift[2]
-        g1 = glb.SRC[src1][d1:, :, :]
-        g2 = glb.SRC[src2][:d2, :, :]
-        g1 = np.swapaxes(g1, 1, 2)
-        g2 = np.swapaxes(g2, 1, 2)
+        g1 = np.swapaxes(glb.SRC[src1][d1:, :, :], 1, 2)
+        g2 = np.swapaxes(glb.SRC[src2][:d2, :, :], 1, 2)
     else:
         shift = shift[0], shift[2]
-        g1 = glb.SRC[src1][:, d1:, :]
-        g2 = glb.SRC[src2][:, :d2, :]
-        g1 = np.swapaxes(g1, 0, 2)
-        g2 = np.swapaxes(g2, 0, 2)
-    mip1 = np.amax(g1, axis=axis).T
-    mip2 = np.amax(g2, axis=axis).T
+        g1 = np.swapaxes(glb.SRC[src1][:, d1:, :], 0, 2)
+        g2 = np.swapaxes(glb.SRC[src2][:, :d2, :], 0, 2)
+    mip1 = np.swapaxes(np.amax(g1, axis=axis), 0, 1)
+    mip2 = np.swapaxes(np.amax(g2, axis=axis), 0, 1)
     if verbose:
-        sys.stderr.write('Rigid [%d] MIP shapes [%d %d]\n' %
-                         (os.getpid(), *shift))
+        sys.stderr.write('Rigid [%d] MIP shape [%d %d]\n' %
+                         (os.getpid(), *mip1.shape))
     s1lx, s1ux, s2lx, s2ux, pad1x, pad2x, np1x, np2x, roilx, roiux = padding0(
         mip1.shape[0], shift[0], mip1.shape[0], max_shifts[0][0],
         max_shifts[0][1])
