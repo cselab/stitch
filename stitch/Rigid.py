@@ -81,7 +81,7 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
     i1[i1 > clip] = clip
     i2[i2 > clip] = clip
     if verbose:
-        sys.stderr.write('Rigid [%d] FFT\n' % os.getpid())
+        sys.stderr.write('Rigid [%d] FFT: %d %d\n' % (os.getpid(), src1, src2))
 
     i1 = np.pad(i1, (pad1x, pad1y), 'constant')
     i2 = np.pad(i2, (pad2x, pad2y), 'constant')
