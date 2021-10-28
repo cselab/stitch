@@ -77,10 +77,7 @@ main(int argc, char **argv)
 {
     char cmd[FILENAME_MAX];
     char *end;
-    char mhd[FILENAME_MAX];
-    char raw_filename[FILENAME_MAX];
     char raw_path[FILENAME_MAX];
-    char xdmf[FILENAME_MAX];
     const char *directory = ".";
     double ix;
     double iy;
