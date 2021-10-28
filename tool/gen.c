@@ -11,7 +11,7 @@
 #define PI (3.141592653589793)
 #define	USED(x)		if(x);else{}
 enum { X, Y, Z };
-static const char *me = "adv.gen";
+static const char *me = "gen";
 static void int16_to_little(uint16_t, unsigned char *, unsigned char *);
 static void
 usg(void)
