@@ -50,18 +50,12 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
     d2 = min(depth, shape[axis])
     if axis == 0:
         shift = shift[1], shift[2]
-        g1 = np.swapaxes(glb.SRC[src1][d1:, :, :], 1, 2)
-        g2 = np.swapaxes(glb.SRC[src2][:d2, :, :], 1, 2)
-        mip1 = np.swapaxes(np.amax(g1, axis=axis), 0, 1)
-        mip2 = np.swapaxes(np.amax(g2, axis=axis), 0, 1)
+        mip1 = np.amax(glb.SRC[src1][d1:, :, :], axis=axis)
+        mip2 = np.amax(glb.SRC[src2][:d2, :, :], axis=axis)
     else:
         shift = shift[0], shift[2]
-        g1 = glb.SRC[src1][:, d1:, :]
-        g2 = glb.SRC[src2][:, :d2, :]
-        mip1 = np.amax(g1, axis=axis)
-        mip2 = np.amax(g2, axis=axis)
-    if verbose:
-        sys.stderr.write('Rigid [%d] MIP [%d %d %d]\n' % (os.getpid(), *g1.shape))
+        mip1 = np.amax(glb.SRC[src1][:, d1:, :], axis=axis)
+        mip2 = np.amax(glb.SRC[src2][:, :d2, :], axis=axis)
     if verbose:
         sys.stderr.write('Rigid [%d] MIP shape [%d %d]\n' %
                          (os.getpid(), *mip1.shape))
