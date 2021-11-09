@@ -29,6 +29,7 @@ def amax0(input):
     fun(*input.shape, *input.strides, input, *output.strides, output)
     return output
 
+
 def amax1(input):
     dtype = np.dtype("<u2")
     assert input.ndim == 3
