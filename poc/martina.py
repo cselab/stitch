@@ -6,9 +6,8 @@ import stitch.Rigid as st
 import stitch.Wobbly as stw
 import sys
 
-
 me = "martina.py"
- # time /usr/bin/python3.8 martina.py /media/user/demeter16TB_3/FCD/FCD_control/FCD_Control_FCX_1.6_NeuN-Cy3
+# time /usr/bin/python3.8 martina.py /media/user/demeter16TB_3/FCD/FCD_control/FCD_Control_FCX_1.6_NeuN-Cy3
 di = sys.argv[1]
 globs = ['*.raw']
 ou = os.path.join(di, 'out')
@@ -17,7 +16,7 @@ sx = sy = sz = 1
 
 def open(path):
     a = np.memmap(path, dtype, 'r', 0, (nx, ny, nz),
-            order='F')[::sx, ::sy, ::sz]
+                  order='F')[::sx, ::sy, ::sz]
     a.setflags(write=False)
 
     return a
@@ -76,9 +75,9 @@ shifts, qualities = st.align((kx, ky, kz),
                              positions,
                              tile_positions,
                              depth=[ox, oy, None],
-                             max_shifts=[(-ox//of, ox//of),
-                                         (-oy//of, oy//of),
-                                         (-oy//of, oy//of)],
+                             max_shifts=[(-ox // of, ox // of),
+                                         (-oy // of, oy // of),
+                                         (-oy // of, oy // of)],
                              clip=25000,
                              processes=processes,
                              verbose=verbose)
@@ -87,7 +86,7 @@ displacements, qualities, status = stw.align(
     (kx, ky, kz),
     pairs,
     positions,
-    max_shifts=((-ox//of, ox//of), (-oy//of, oy//of)),
+    max_shifts=((-ox // of, ox // of), (-oy // of, oy // of)),
     prepare=True,
     find_shifts=dict(cutoff=3 * np.sqrt(2) / sx, min_distance=16 // sx),
     processes=processes,
@@ -100,7 +99,7 @@ positions_new, components = stw.place0((kx, ky, kz),
                                        status,
                                        smooth=dict(method='window',
                                                    window='hamming',
-                                                   window_length=800//sx,
+                                                   window_length=800 // sx,
                                                    binary=None),
                                        min_quality=-np.inf,
                                        processes=processes,
@@ -112,7 +111,7 @@ wobble, status = stw.place1((kx, ky, kz),
                             components,
                             smooth=dict(method='window',
                                         window='bartlett',
-                                        window_length=160//sx,
+                                        window_length=160 // sx,
                                         binary=10),
                             processes=processes,
                             verbose=verbose)

@@ -6,6 +6,7 @@ CFLAGS = -O3
 
 all: install
 M = \
+stitch/fast.py \
 stitch/glb.py \
 stitch/Rigid.py \
 stitch/stitch0.so \
