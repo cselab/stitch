@@ -6,10 +6,18 @@ A scalable implementation
 of <a href="https://christophkirst.github.io/ClearMap2Documentation/html/wobblystitcher.html#wobblystitcher">WobblyStitcher</a>
 
 <h2>Dependencies</h2>
+
 <pre>
 $ python3 -m pip install numpy scikit-image
 </pre>
 
+C compiler.
+
+<h2>Install</h2>
+
+<pre>
+$ make
+</pre>
 
 <h2>Visualization</h2>
 
