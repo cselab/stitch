@@ -13,9 +13,9 @@
 typedef uint16_t type;
 #define TYPE_MIN (0)
 
-void amax0(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
-           uint64_t sz, const void *input, uint64_t oy, uint64_t oz,
-           void *output) {
+int amax0(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
+           uint64_t sz, const uint8_t *input, uint64_t oy, uint64_t oz,
+           uint8_t *output) {
   int Verbose;
   Verbose = getenv("STITCH_VERBOSE") != NULL;
   if (Verbose) {
@@ -34,7 +34,7 @@ void amax0(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
     for (uint64_t j = 0; j < ny; j++) {
       type ma;
       ma = TYPE_MIN;
-      const void *input0 = input + k * sz + j * sy;
+      const uint8_t *input0 = input + k * sz + j * sy;
       for (uint64_t i = 0; i < nx; i++) {
         type x;
         x = *(type *)(input0 + i * sx);
@@ -44,11 +44,12 @@ void amax0(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
       *(type *)(output + k * oz + j * oy) = ma;
     }
   }
+  return 0;
 }
 
-void amax1(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
-           uint64_t sz, const void *input, uint64_t ox, uint64_t oz,
-           void *output) {
+int amax1(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
+           uint64_t sz, const uint8_t *input, uint64_t ox, uint64_t oz,
+           uint8_t *output) {
   int Verbose;
   Verbose = getenv("STITCH_VERBOSE") != NULL;
   if (Verbose) {
@@ -67,7 +68,7 @@ void amax1(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
     for (uint64_t i = 0; i < nx; i++) {
       type ma;
       ma = TYPE_MIN;
-      const void *input0 = input + k * sz + i * sx;
+      const uint8_t *input0 = input + k * sz + i * sx;
       for (uint64_t j = 0; j < ny; j++) {
         type x;
         x = *(type *)(input0 + j * sy);
@@ -77,4 +78,5 @@ void amax1(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
       *(type *)(output + k * oz + i * ox) = ma;
     }
   }
+  return 0;
 }

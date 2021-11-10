@@ -22,7 +22,7 @@ def amax0(input):
     path = os.path.dirname(os.path.realpath(__file__))
     lib = np.ctypeslib.load_library('stitch0.so', path)
     fun = lib.amax0
-    fun.restype = None
+    fun.restype = ctypes.c_int
     fun.argtypes = [
         ctypes.c_ulong,
         ctypes.c_ulong,
@@ -47,7 +47,7 @@ def amax1(input):
     path = os.path.dirname(os.path.realpath(__file__))
     lib = np.ctypeslib.load_library('stitch0.so', path)
     fun = lib.amax1
-    fun.restype = None
+    fun.restype = ctypes.c_int    
     fun.argtypes = [
         ctypes.c_ulong,
         ctypes.c_ulong,
