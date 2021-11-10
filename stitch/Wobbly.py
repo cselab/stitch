@@ -132,7 +132,7 @@ def align(shape, pairs, positions, max_shifts, prepare, find_shifts, verbose,
 def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare,
                find_shifts, verbose):
     if verbose:
-        sys.stderr.write('Wobbly: align_pair\n')
+        sys.stderr.write('Wobbly [%d]: align_pair\n' % os.getpid())
     z1 = p1[2]
     z2 = p2[2]
 
