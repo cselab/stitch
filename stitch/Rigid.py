@@ -51,12 +51,12 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
     d2 = min(depth, shape[axis])
     if axis == 0:
         shift = shift[1], shift[2]
-        mip1 = stitch.fast.amax0(glb.SRC[src1][d1:, :, :])
-        mip2 = stitch.fast.amax0(glb.SRC[src2][:d2, :, :])
+        mip1 = stitch.fast.amax(glb.SRC[src1][d1:, :, :], axis)
+        mip2 = stitch.fast.amax(glb.SRC[src2][:d2, :, :], axis)
     else:
         shift = shift[0], shift[2]
-        mip1 = stitch.fast.amax1(glb.SRC[src1][:, d1:, :])
-        mip2 = stitch.fast.amax1(glb.SRC[src2][:, :d2, :])
+        mip1 = stitch.fast.amax(glb.SRC[src1][:, d1:, :], axis)
+        mip2 = stitch.fast.amax(glb.SRC[src2][:, :d2, :], axis)
     if verbose:
         sys.stderr.write('Rigid [%d] MIP shape [%d %d]\n' %
                          (os.getpid(), *mip1.shape))

@@ -8,4 +8,4 @@ low = np.iinfo(dtype).min
 high = np.iinfo(dtype).max
 
 a = np.random.randint(low, high + 1, size=(nx, ny, nz), dtype=dtype)
-print(stitch.fast.amax0(a) - np.amax(a, axis=0))
+print(stitch.fast.amax(a, 0) - np.amax(a, 0))

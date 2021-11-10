@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef uint16_t type;
+#define TYPE_MIN (0)
+
 void amax0(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
            uint64_t sz, const void *input, uint64_t oy, uint64_t oz,
            void *output) {
@@ -29,16 +32,16 @@ void amax0(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
       fprintf(stderr, "stitch.fast.amax0 [%d]: %" PRIu64 " / %" PRIu64 "\n",
               omp_get_thread_num(), k + 1, nz);
     for (uint64_t j = 0; j < ny; j++) {
-      uint16_t ma;
-      ma = 0;
+      type ma;
+      ma = TYPE_MIN;
       const void *input0 = input + k * sz + j * sy;
       for (uint64_t i = 0; i < nx; i++) {
-        uint16_t x;
-        x = *(uint16_t *)(input0 + i * sx);
+        type x;
+        x = *(type *)(input0 + i * sx);
         if (x > ma)
           ma = x;
       }
-      *(uint16_t *)(output + k * oz + j * oy) = ma;
+      *(type *)(output + k * oz + j * oy) = ma;
     }
   }
 }
@@ -62,16 +65,16 @@ void amax1(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
       fprintf(stderr, "stitch.fast.amax0 [%d]: %" PRIu64 " / %" PRIu64 "\n",
               omp_get_thread_num(), k + 1, nz);
     for (uint64_t i = 0; i < nx; i++) {
-      uint16_t ma;
-      ma = 0;
+      type ma;
+      ma = TYPE_MIN;
       const void *input0 = input + k * sz + i * sx;
       for (uint64_t j = 0; j < ny; j++) {
-        uint16_t x;
-        x = *(uint16_t *)(input0 + j * sy);
+        type x;
+        x = *(type *)(input0 + j * sy);
         if (x > ma)
           ma = x;
       }
-      *(uint16_t *)(output + k * oz + i * ox) = ma;
+      *(type *)(output + k * oz + i * ox) = ma;
     }
   }
 }

@@ -15,11 +15,15 @@ stitch/union_find.py \
 stitch/Wobbly.py \
 
 install: $M
-	@p=`"$(PY)" -m site --user-site` || exit 2 && \
+	@p=`"$(PY)" -m site --user-site` || exit 1 && \
 	mkdir -p "$$p/stitch" && \
-	for i in $M; do cp -- "$$i" "$$p/stitch/$$f" || exit 2; done && \
+	for i in $M; do cp -- "$$i" "$$p/$$i" || exit 1; done && \
 	printf '%s\n' "$$p"
 
 stitch/stitch0.so: stitch/stitch.c
 	$(CC) $(CFLAGS) -fopenmp -shared -fPIC -o $@ $< $(LDFLAGS)
+uninstall:
+	p=`"$(PY)" -m site --user-site` || exit 1 && \
+	for i in $M; do rm -- "$$p/$$i" || exit 1; done && \
+	rmdir -- "$$p/stitch"
 clean:; rm -f stitch/stitch0.so
