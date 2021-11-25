@@ -1,0 +1,50 @@
+[Metadata for file] I:/FCD_P-OCX_2.7_NeuN-Cy3 (2)/FCD_P-OCX_2.7(2)_X0_Y0_561_nm_F75_562SG_RAZOR_EDGE_LP_4x_Right_000000.raw
+[z_stepsize] 1.0
+[z_planes] 3299
+
+[CFG] 
+[Laser] 561 nm
+[Intensity (%)] 13
+[Zoom] 4x
+[Pixelsize in um] 1.51
+[Filter] F75 562SG RAZOR EDGE LP
+[Shutter] Right
+
+[POSITION] 
+[x_pos] 0.0
+[y_pos] 0.0
+[f_start] 78840.0
+[f_end] 78840.0
+[z_start] 0.0
+[z_end] 3299.9000000000015
+[z_stepsize] 1.0
+[z_planes] 3299
+[rot] 0.0
+
+[ETL PARAMETERS] 
+[ETL CFG File] C:/Users/User/Documents/mesoSPIM_Jul2021/mesoSPIM-control/mesoSPIM/config/etl_parameters/ETL-parameters - Anna Maria-DBE-30 mm - Human.csv
+[etl_l_offset] 1.538
+[etl_l_amplitude] 0.216
+[etl_r_offset] 1.934
+[etl_r_amplitude] 0.208
+
+[GALVO PARAMETERS] 
+[galvo_l_frequency] 198.9
+[galvo_l_amplitude] 1.72
+[galvo_l_offset] -0.4
+[galvo_r_amplitude] 1.72
+[galvo_r_offset] 0.35
+
+[CAMERA PARAMETERS] 
+[camera_type] HamamatsuOrca
+[camera_exposure] 0.01
+[camera_line_interval] 7.5e-05
+[x_pixels] 2048
+[y_pixels] 2048
+
+[TIMING INFORMATION] 
+[Started stack] 20210903-101943
+[Started taking images] 20210903-101944
+[Stopped taking images] 20210903-103058
+[Stopped stack] 20210903-103103
+[Frame rate:] 4.896320032086831

@@ -8,6 +8,7 @@ all: install
 M = \
 stitch/fast.py \
 stitch/glb.py \
+stitch/mesospim.py\
 stitch/Rigid.py \
 stitch/stitch0.so \
 stitch/Tracking.py \
