@@ -20,7 +20,7 @@ def meta():
         sys.exit(1)
     with open(path[0]) as file:
         for line in file:
-            line = re.sub("\r\n$", "", line)
+            line = re.sub("\n$", "", line)
             key = re.sub("^\[", "", line)
             key = re.sub("\].*", "", key)
             val = re.sub(".*\]", "", line)
@@ -51,7 +51,7 @@ def tile0(path):
     return path, tx, ty
 
 # python poc/side.py '/media/user/demeter16TB_3/FCD/FCD/FCD_P-OCX_2.7_NeuN-Cy3 (2)'
-sx = sy = sz = 8
+sx = sy = sz = 4
 nx, ny, nz = meta()
 path, tx, ty = tile("*.raw")
 
@@ -59,11 +59,12 @@ kx = (nx + sx - 1) // sx
 ky = (ny + sy - 1) // sy
 kz = (nz + sz - 1) // sy
 
-ox = 4
-oy = 4
+ox = oy = 1
+hx = 392 // sx
+hy = 392 // sy
 
-ux = kx * tx + (tx - 1) * ox
-uy = ky * ty + (ty - 1) * oy
+ux = kx * tx - (tx - 1) * hx + (tx - 1) * ox
+uy = ky * ty - (ty - 1) * hy + (ty - 1) * oy
 uz = kz
 
 output_path = "%dx%dx%dle.raw" % (ux, uy, uz)
@@ -71,9 +72,12 @@ output = np.memmap(output_path, dtype, "w+", 0, (ux, uy, uz), 'F')
 
 for x in range(tx):
     for y in range(ty):
-        print(x, y)
+        sys.stderr.write("%s: %d %d\n" % (me, x, y))
         i = x * ty + y
         a = np.memmap(path[i], dtype, 'r', 0, (nx, ny, nz), 'F')[::sx, ::sy, ::sz]
-        np.copyto(output[x * kx + ox * x : (x + 1) * kx + ox * x,
-                         y * ky + oy * y : (y + 1) * ky + oy * y,
-                         :], a, 'no')
+        xl = x * kx - x * hx + ox * x
+        yl = y * ky - y * hy + oy * y
+        lx = kx - hx if x != tx - 1 else kx
+        ly = ky - hy if y != ty - 1 else ky
+        np.copyto(output[xl : xl + lx, yl : yl + ly, :], a[:lx, :ly, :], 'no')
+sys.stderr.write("%s\n" % output_path)
