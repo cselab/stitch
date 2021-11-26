@@ -8,6 +8,7 @@ me = "side.py"
 di = sys.argv[1]
 dtype = np.dtype("<u2")
 
+
 def tile(g):
     g = os.path.join(di, g)
     return tile0(glob.glob(g))
@@ -50,6 +51,7 @@ def tile0(path):
     ty = len(set(y))
     return path, tx, ty
 
+
 # python poc/side.py '/media/user/demeter16TB_3/FCD/FCD/FCD_P-OCX_2.7_NeuN-Cy3 (2)'
 sx = sy = sz = 4
 nx, ny, nz = meta()
@@ -74,10 +76,11 @@ for x in range(tx):
     for y in range(ty):
         sys.stderr.write("%s: %d %d\n" % (me, x, y))
         i = x * ty + y
-        a = np.memmap(path[i], dtype, 'r', 0, (nx, ny, nz), 'F')[::sx, ::sy, ::sz]
+        a = np.memmap(path[i], dtype, 'r', 0, (nx, ny, nz),
+                      'F')[::sx, ::sy, ::sz]
         xl = x * kx - x * hx + ox * x
         yl = y * ky - y * hy + oy * y
         lx = kx - hx if x != tx - 1 else kx
         ly = ky - hy if y != ty - 1 else ky
-        np.copyto(output[xl : xl + lx, yl : yl + ly, :], a[:lx, :ly, :], 'no')
+        np.copyto(output[xl:xl + lx, yl:yl + ly, :], a[:lx, :ly, :], 'no')
 sys.stderr.write("%s\n" % output_path)

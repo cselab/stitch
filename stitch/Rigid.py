@@ -165,3 +165,29 @@ def place(pairs, positions, shifts):
     my = min(yy)
     mz = min(zz)
     return tuple((x - mx, y - my, z - mz) for x, y, z in zip(xx, yy, zz))
+
+
+def shape(shape0, positions):
+    kx, ky, kz = shape0
+    lx, ly, lz = np.min(positions, axis=0)
+    ux, uy, uz = np.max(positions, axis=0)
+    return ux - lx + kx, uy - ly + ky, uz - lz + kz
+
+
+def stitch0(shape, positions, verbose):
+    sink = glb.SINK[0]
+    kx, ky, kz = shape
+    for i, (xl, yl, zl) in enumerate(positions):
+        xh = xl + kx
+        yh = yl + ky
+        zh = zl + kz
+        np.copyto(sink[xl:xh, yl:yh, zl:zh], glb.SRC[i], 'no')
+    sink[:] = 1
+    for i, (xl, yl, zl) in enumerate(positions):
+        xh = xl + kx
+        yh = yl + ky
+        zh = zl + kz
+        sink[xl:xh, yl, zl:zh] = 0
+        sink[xl:xh, yh - 1, zl:zh] = 0
+        sink[xl, yl:yh, zl:zh] = 0
+        sink[xh - 1, yl:yh, zl:zh] = 0
