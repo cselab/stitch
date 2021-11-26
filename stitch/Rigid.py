@@ -159,7 +159,7 @@ def place(pairs, positions, shifts):
                 M[k, (j - 1) * 3 + d] = 1
             k += 1
     pos, residuals, rank, sing = np.linalg.lstsq(M, s, rcond=None)
-    pos = (0, 0, 0) + tuple(round(p) for p in pos)
+    pos = (0, 0, 0) + tuple(int(round(p)) for p in pos)
     xx, yy, zz = pos[::3], pos[1::3], pos[2::3]
     mx = min(xx)
     my = min(yy)
