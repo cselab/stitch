@@ -93,10 +93,7 @@ stw.stitch(glb.SRC[0].shape,
            status,
            processes,
            verbose=verbose)
-sys.stderr.write("%.2g%% %s\n" %
-                 (100 * np.count_nonzero(sink) / np.size(sink), output))
-
 import poc.pgm
-
-path = "%dx%dx%dle.pgm" % (ux, uy, uz)
+path = "%dx%d.pgm" % (ux, uy)
 poc.pgm.pgm(path, sink[:, :, uz // 2])
+sys.stderr.write("%s\n%s\n" % (output, path))

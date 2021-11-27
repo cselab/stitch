@@ -42,10 +42,11 @@ stitch
 <pre>
 $ python3 main.py
 main.py: processes = 4
-46% 391x391x200le.raw
+391x391x200le.raw
+391x391.pgm
 </pre>
 
-Open <tt>390x390x200le.raw</tt> in ImageJ.
+Open <tt>391x391x200le.raw</tt> in ImageJ.
 
 <p align="center"><img src="img/sample.png" alt="sample output"/></p>
 
