@@ -8,7 +8,7 @@ of <a href="https://christophkirst.github.io/ClearMap2Documentation/html/wobblys
 <h2>Dependencies</h2>
 
 <pre>
-$ python3 -m pip install numpy scikit-image
+$ python3 -m pip install --no-deps numpy scikit-image scipy pywavelets
 </pre>
 
 C compiler.
@@ -28,7 +28,7 @@ $ make
 Generate four files with fake input
 <pre>
 $ (cd tool && make)
-$ ./tool/gen -n 200 200 200 -o 10 10
+$ tool/gen -n 200 200 200 -o 10 10
 $ ls -1 *.raw
 200x200x200le.00.00.raw
 200x200x200le.00.01.raw
