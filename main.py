@@ -94,6 +94,7 @@ stw.stitch(glb.SRC[0].shape,
            processes,
            verbose=verbose)
 import poc.pgm
+
 path = "%dx%d.pgm" % (ux, uy)
 poc.pgm.pgm(path, sink[:, :, uz // 2])
 sys.stderr.write("%s\n%s\n" % (output, path))

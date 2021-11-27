@@ -182,11 +182,14 @@ def stitch0(shape, positions, verbose):
         yh = yl + ky
         zh = zl + kz
         np.copyto(sink[xl:xh, yl:yh, zl:zh], glb.SRC[i], 'no')
+
+    mi = np.iinfo(sink.dtype).min
     for i, (xl, yl, zl) in enumerate(positions):
         xh = xl + kx
         yh = yl + ky
         zh = zl + kz
-        sink[xl:xh, yl, zl:zh] = 0
-        sink[xl:xh, yh - 1, zl:zh] = 0
-        sink[xl, yl:yh, zl:zh] = 0
-        sink[xh - 1, yl:yh, zl:zh] = 0
+
+        sink[xl:xh, yl, zl:zh] = mi
+        sink[xl:xh, yh - 1, zl:zh] = mi
+        sink[xl, yl:yh, zl:zh] = mi
+        sink[xh - 1, yl:yh, zl:zh] = mi

@@ -3,14 +3,12 @@ import numpy as np
 import os
 import stitch.glb as glb
 import stitch.Rigid as st
-import stitch.Wobbly as stw
 import sys
 
 me = "main.py"
 verbose = False
 dtype = np.dtype("<u2")
 processes = 4
-sys.stderr.write("%s: processes = %s\n" % (me, processes))
 tx, ty = 2, 2
 nx, ny, nz = 200, 200, 200
 sx = sy = sz = 1
@@ -55,3 +53,4 @@ sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
 
 st.stitch0((kx, ky, kz), positions, verbose=verbose)
+sys.stderr.write("%s\n" % output)
