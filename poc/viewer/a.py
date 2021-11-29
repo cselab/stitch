@@ -4,9 +4,13 @@ import numpy as np
 import os
 import stitch.mesospim
 
-
-(tx, ty), (nx, ny, nz), (ox, oy), path = stitch.mesospim.read_tiles(sys.argv[1::])
-print((tx, ty), (nx, ny, nz), (ox, oy), path)
+try:
+    (tx, ty), (nx, ny, nz), (ox, oy), path = stitch.mesospim.read_tiles(sys.argv[1::])
+except ValueError:
+    tx = ty = 2
+    nx = ny = nz = 200
+    ox = oy = 10
+    path = sys.argv[1:]
 
 dtype = np.dtype("<u2")
 sx = sy = sz = 1
@@ -53,13 +57,14 @@ def draw(i):
 def press(event):
     n = len(src)
     key = event.key
+    print(key)
     if key == "right":
-        zslice[0] += 10
+        zslice[0] += 1
         for i in range(n):
             draw(i)
         fig.canvas.draw()
     elif key == "left":
-        zslice[0] -= 10
+        zslice[0] -= 1
         for i in range(n):
             draw(i)
         fig.canvas.draw()
