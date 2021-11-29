@@ -132,4 +132,5 @@ def press(event):
 for i in range(len(src)):
     draw(i)
 fig.canvas.mpl_connect('key_press_event', press)
+fig.tight_layout()
 matplotlib.pyplot.show()
