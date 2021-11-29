@@ -113,17 +113,12 @@ def press(event):
             art[se[0]] = None
             fig.canvas.draw()
     elif key == "R":
-        stride[0] += 1
-        stride[1] += 1
-        stride[2] += 1
+        stride[:] = [2*e for e in stride]
         for i in range(n):
             draw(i)
         fig.canvas.draw()
     elif key == "r":
-        stride[0] -= 1
-        stride[1] -= 1
-        stride[2] -= 1
-        stride[:] = [max(1, e) for e in stride]
+        stride[:] = [max(1, e//2) for e in stride]
         for i in range(n):
             draw(i)
         fig.canvas.draw()
