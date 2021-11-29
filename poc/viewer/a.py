@@ -8,12 +8,7 @@ tx, ty = 2, 2
 sx = sy = sz = 1
 ox = 20
 oy = 20
-path = (
-    '200x200x200le.00.00.raw',
-    '200x200x200le.00.01.raw',
-    '200x200x200le.01.00.raw',
-    '200x200x200le.01.01.raw',
-)
+path = sys.argv[1:]
 
 src = [
     np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F')[::sx, ::sy, ::sz]
@@ -47,7 +42,9 @@ def draw(i):
     cmap = 'Greens' if se[0] == i else 'Greys'
     if art[i] is not None:
         art[i].remove()
-    art[i] = matplotlib.pyplot.imshow(s.T, alpha=0.5, cmap=cmap, extent=extent)
+    vmin = np.quantile(s, 0.1)
+    vmax = np.quantile(s, 0.9)
+    art[i] = matplotlib.pyplot.imshow(s.T, alpha=0.5, cmap=cmap, vmin=vmin, vmax=vmax, extent=extent)
 
 def press(event):
     n = len(src)
