@@ -26,9 +26,10 @@ for x in range(tx):
 fig, ax = matplotlib.pyplot.subplots()
 fig.tight_layout()
 fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+fig.canvas.manager.full_screen_toggle()
 ax.axis('off')
-lx = nx * tx
-ly = ny * ty
+lx = (nx - ox) * tx
+ly = (ny - oy) * ty
 ax.set_xlim((-lx/10, 11*lx/10))
 ax.set_ylim((-ly/10, 11*ly/10))
 
@@ -44,7 +45,7 @@ def draw(i):
     elif z > nz - 1:
         z = nz - 1
     s = src[i][::stride[0], ::stride[1], z]
-    y = ty * ny - y
+    y = ty * (ny - oy) - y
     extent = (x, x + nx, y - ny, y)
     cmap = 'Greens' if se[0] == i else 'Greys'
     if art[i] is not None:
