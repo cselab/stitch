@@ -1,14 +1,33 @@
 import matplotlib.pyplot
 import sys
 import numpy as np
+import os
 
 dtype = np.dtype("<u2")
-nx, ny, nz = 200, 200, 200
-tx, ty = 2, 2
+nx, ny, nz = 256, 256, 538
+tx, ty = 3, 5
 sx = sy = sz = 1
 ox = 20
 oy = 20
-path = sys.argv[1:]
+path = (
+    '02x04.raw',
+    '02x03.raw',
+    '02x02.raw',
+    '02x01.raw',
+    '02x00.raw',
+    '01x04.raw',
+    '01x03.raw',
+    '01x02.raw',
+    '01x01.raw',
+    '01x00.raw',
+    '00x04.raw',
+    '00x03.raw',
+    '00x02.raw',
+    '00x01.raw',
+    '00x00.raw',
+)
+di = "/u/stride8"
+path = [os.path.join(di, e) for e in path]
 
 src = [
     np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F')[::sx, ::sy, ::sz]
@@ -22,6 +41,10 @@ for x in range(tx):
         positions.append([x * (kx - ox), y * (ky - oy), 0])
 
 fig, ax = matplotlib.pyplot.subplots()
+fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
+manager = matplotlib.pyplot.get_current_fig_manager()
+manager.full_screen_toggle()
+ax.axis('off')
 ax.set_xlim((0, kx * tx))
 ax.set_ylim((0, ky * ty))
 
@@ -96,7 +119,17 @@ def press(event):
     elif key == "n":
         positions[se[0]][2] += 1
         draw(se[0])
-        fig.canvas.draw()                        
+        fig.canvas.draw()
+    elif key == "z":
+        if art[se[0]] == None:
+            draw(se[0])
+            fig.canvas.draw()
+        else:
+            art[se[0]].remove()
+            art[se[0]] = None
+            fig.canvas.draw()
+    elif key == "q":
+        sys.exit(0)
 
 for i in range(len(src)):
     draw(i)
