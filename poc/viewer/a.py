@@ -13,7 +13,7 @@ except ValueError:
     path = sys.argv[1:]
 
 dtype = np.dtype("<u2")
-sx = sy = sz = 1
+sx = sy = sz = 4
 ox //= sx
 oy //= sy
 src = [
