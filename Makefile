@@ -3,6 +3,8 @@
 PY = python3
 CC = c99
 CFLAGS = -O3
+CFLAGS_OPENMP = -fopenmp
+CFLAGS_FPIC = -fPIC
 
 all: install
 M = \
@@ -22,7 +24,7 @@ install: $M
 	printf '%s\n' "$$p"
 
 stitch/stitch0.so: stitch/stitch.c
-	$(CC) $(CFLAGS) -fopenmp -shared -fPIC -o $@ $< $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CFLAGS_OPENMP) $(CFLAGS_FPIC) -shared -o $@ $< $(LDFLAGS)
 uninstall:
 	p=`"$(PY)" -m site --user-site` || exit 1 && \
 	for i in $M; do rm -- "$$p/$$i" || exit 1; done && \
