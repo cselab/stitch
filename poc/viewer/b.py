@@ -4,6 +4,8 @@ import os
 import stitch.mesospim
 import stitch.fast
 
+# STITCH_VERBOSE=1 OMP_NUM_THREADS=1 python3.6 poc/viewer/b.py '/media/user/demeter16TB_3/FCD/FCD/FCD_P-OCX_2.7_NeuN-Cy3 (2)'/*.raw
+
 try:
     (tx, ty), (nx, ny,
                nz), (ox, oy), path = stitch.mesospim.read_tiles(sys.argv[1::])
@@ -14,15 +16,21 @@ except ValueError:
     path = sys.argv[1:]
 
 dtype = np.dtype("<u2")
-hx, hy, hz = 5, 5, 5
-sx, sy, sz = 4, 4, 4
+sx = sy = sz = 8
+src = [np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F')[::sx,::sy,::sz] for e in path]
+kx = (nx + sx - 1) // sx
+ky = (ny + sy - 1) // sy
+kz = (nz + sz - 1) // sz
 
-src = [np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F') for e in path]
+ox //= sx
+oy //= sy
+hx, hy, hz = ox//2, oy//2, oy//2
+
 pairs = []
 positions = []
 for x in range(tx):
     for y in range(ty):
-        positions.append([x * (nx - ox), y * (ny - oy), 0])
+        positions.append([x * (kx - ox), y * (ky - oy), 0])
         i = x * ty + y
         if x + 1 < tx:
             pairs.append((i, (x + 1) * ty + y))
@@ -45,9 +53,9 @@ def ov_roi(x0, x1, n, h):
 for i, j in pairs:
     x0, y0, z0 = positions[i]
     x1, y1, z1 = positions[j]
-    x0l, x0h, x1l, x1h = ov_roi(x0, x1, nx, hx)
-    y0l, y0h, y1l, y1h = ov_roi(y0, y1, ny, hy)
-    z0l, z0h, z1l, z1h = ov_roi(z0, z1, nz, hz)
+    x0l, x0h, x1l, x1h = ov_roi(x0, x1, kx, hx)
+    y0l, y0h, y1l, y1h = ov_roi(y0, y1, ky, hy)
+    z0l, z0h, z1l, z1h = ov_roi(z0, z1, kz, hz)
 
     x0 += x0l
     y0 += y0l
@@ -66,25 +74,24 @@ for i, j in pairs:
     n0z = z0h - z0l
     n1z = z1h - z1l
 
-    roi0 = src[i][x0l:x0h, y0l:y0h, z0l:z0h]
-    roi1 = src[j][x1l:x1h, y1l:y1h, z1l:z1h]
 
+    roi0 = np.ndarray((n0x, n0y, n0z), dtype=dtype)
+    roi1 = np.ndarray((n0x, n0y, n0z), dtype=dtype)
     print(roi0.shape, roi1.shape)
-
-    roi0 = roi0.copy()
-    roi1 = roi1.copy()
+    np.copyto(roi0, src[i][x0l:x0h, y0l:y0h, z0l:z0h], 'no')
+    np.copyto(roi1, src[j][x0l:x0h, y0l:y0h, z0l:z0h], 'no')
     
     m_corr = -1
     for mx in range(-hx, hx + 1):
         for my in range(-hy, hy + 1):
             for mz in range(-hz, hz + 1):
-
+                print(mx, my, mz)
                 x0l, x0h, x1l, x1h = ov(x0, x1 + mx, n0x, n1x)
                 y0l, y0h, y1l, y1h = ov(y0, y1 + my, n0y, n1y)
                 z0l, z0h, z1l, z1h = ov(z0, z1 + mz, n0z, n1z)
 
-                a = roi0[x0l:x0h:sx, y0l:y0h:sy, z0l:z0h:sz]
-                b = roi1[x1l:x1h:sx, y1l:y1h:sy, z1l:z1h:sz]
+                a = roi0[x0l:x0h, y0l:y0h, z0l:z0h]
+                b = roi1[x1l:x1h, y1l:y1h, z1l:z1h]
 
                 corr = stitch.fast.corr(a, b)
                 if corr > m_corr:
