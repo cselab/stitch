@@ -5,7 +5,8 @@ import os
 import stitch.mesospim
 
 try:
-    (tx, ty), (nx, ny, nz), (ox, oy), path = stitch.mesospim.read_tiles(sys.argv[1::])
+    (tx, ty), (nx, ny,
+               nz), (ox, oy), path = stitch.mesospim.read_tiles(sys.argv[1::])
 except ValueError:
     tx = ty = 2
     nx = ny = nz = 200
@@ -14,10 +15,7 @@ except ValueError:
 
 dtype = np.dtype("<u2")
 stride = [8, 8, 8]
-src = [
-    np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F')
-    for e in path
-]
+src = [np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F') for e in path]
 positions = []
 for x in range(tx):
     for y in range(ty):
@@ -30,12 +28,13 @@ fig.canvas.manager.full_screen_toggle()
 ax.axis('off')
 lx = (nx - ox) * tx
 ly = (ny - oy) * ty
-ax.set_xlim((-lx/10, 11*lx/10))
-ax.set_ylim((-ly/10, 11*ly/10))
+ax.set_xlim((-lx / 10, 11 * lx / 10))
+ax.set_ylim((-ly / 10, 11 * ly / 10))
 
 zslice = [nz // 2]
 se = [0]
 art = [None for e in src]
+
 
 def draw(i):
     x, y, z = positions[i]
@@ -52,7 +51,13 @@ def draw(i):
         art[i].remove()
     vmin = np.quantile(s, 0.1)
     vmax = np.quantile(s, 0.9)
-    art[i] = matplotlib.pyplot.imshow(s.T, alpha=0.5, cmap=cmap, vmin=vmin, vmax=vmax, extent=extent)
+    art[i] = matplotlib.pyplot.imshow(s.T,
+                                      alpha=0.5,
+                                      cmap=cmap,
+                                      vmin=vmin,
+                                      vmax=vmax,
+                                      extent=extent)
+
 
 def press(event):
     n = len(src)
@@ -114,12 +119,12 @@ def press(event):
             art[se[0]] = None
             fig.canvas.draw()
     elif key == "R":
-        stride[:] = [2*e for e in stride]
+        stride[:] = [2 * e for e in stride]
         for i in range(n):
             draw(i)
         fig.canvas.draw()
     elif key == "r":
-        stride[:] = [max(1, e//2) for e in stride]
+        stride[:] = [max(1, e // 2) for e in stride]
         for i in range(n):
             draw(i)
         fig.canvas.draw()
@@ -129,6 +134,7 @@ def press(event):
         print()
         for x, y, z in positions:
             print(x, y, z)
+
 
 for i in range(len(src)):
     draw(i)

@@ -17,6 +17,38 @@ def amax(input, axis):
         raise ValueError("axis = %d is not supported" % axis)
 
 
+def corr(a, b):
+    dtype = np.dtype("<u2")
+    if a.dtype != dtype:
+        raise TypeError("dtype '%s' is not supported" % str(a.dtype))
+    if b.dtype != dtype:
+        raise TypeError("dtype '%s' is not supported" % str(b.dtype))
+    if a.ndim != 3:
+        raise TypeError("ndim = '%d' is not supported" % a.ndim)
+    if b.ndim != 3:
+        raise TypeError("ndim = '%d' is not supported" % b.ndim)
+    if np.shape(a) != np.shape(b):
+        raise TypeError("np.shape(a) != np.shape(b)" % (str(np.shape(a)), str(np.shape(b))))
+    path = os.path.dirname(os.path.realpath(__file__))
+    lib = np.ctypeslib.load_library('stitch0.so', path)
+    fun = lib.corr
+    fun.restype = ctypes.c_double
+    fun.argtypes = [
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        np.ctypeslib.ndpointer(dtype, flags='aligned'),
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        np.ctypeslib.ndpointer(dtype, flags='aligned'),
+    ]
+    return fun(*a.shape, *a.strides, a, *b.strides, b)
+
+
 def amax0(input):
     dtype = np.dtype("<u2")
     path = os.path.dirname(os.path.realpath(__file__))
