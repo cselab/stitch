@@ -17,6 +17,7 @@ except ValueError:
 
 dtype = np.dtype("<u2")
 sx = sy = sz = 8
+tx = ty = tz = 2
 src = [np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F')[::sx,::sy,::sz] for e in path]
 kx = (nx + sx - 1) // sx
 ky = (ny + sy - 1) // sy
@@ -90,8 +91,8 @@ for i, j in pairs:
                 y0l, y0h, y1l, y1h = ov(y0, y1 + my, n0y, n1y)
                 z0l, z0h, z1l, z1h = ov(z0, z1 + mz, n0z, n1z)
 
-                a = roi0[x0l:x0h, y0l:y0h, z0l:z0h]
-                b = roi1[x1l:x1h, y1l:y1h, z1l:z1h]
+                a = roi0[x0l:x0h:tx, y0l:y0h:ty, z0l:z0h:tz]
+                b = roi1[x1l:x1h:tx, y1l:y1h:ty, z1l:z1h:tz]
 
                 corr = stitch.fast.corr(a, b)
                 if corr > m_corr:
