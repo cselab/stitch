@@ -177,7 +177,10 @@ def shape(shape0, positions):
 def stitch0(shape, positions, verbose):
     sink = glb.SINK[0]
     kx, ky, kz = shape
+    n = len(positions)
     for i, (xl, yl, zl) in enumerate(positions):
+        if verbose:
+            sys.stderr.write('Rigid.stitch0 %d / %d\n' % (i + 1, n))
         xh = xl + kx
         yh = yl + ky
         zh = zl + kz
@@ -193,3 +196,16 @@ def stitch0(shape, positions, verbose):
         sink[xl:xh, yh - 1, zl:zh] = mi
         sink[xl, yl:yh, zl:zh] = mi
         sink[xh - 1, yl:yh, zl:zh] = mi
+
+
+def stitch0(shape, positions, verbose):
+    sink = glb.SINK[0]
+    kx, ky, kz = shape
+    n = len(positions)
+    for i, (xl, yl, zl) in enumerate(positions):
+        if verbose:
+            sys.stderr.write('Rigid.stitch1 %d / %d\n' % (i + 1, n))
+        xh = xl + kx
+        yh = yl + ky
+        zh = zl + kz
+        np.copyto(sink[xl:xh, yl:yh, zl:zh], glb.SRC[i], 'no')

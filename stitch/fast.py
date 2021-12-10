@@ -28,7 +28,8 @@ def corr(a, b):
     if b.ndim != 3:
         raise TypeError("ndim = '%d' is not supported" % b.ndim)
     if np.shape(a) != np.shape(b):
-        raise TypeError("np.shape(a) != np.shape(b)" % (str(np.shape(a)), str(np.shape(b))))
+        raise TypeError("np.shape(a) != np.shape(b)" %
+                        (str(np.shape(a)), str(np.shape(b))))
     path = os.path.dirname(os.path.realpath(__file__))
     lib = np.ctypeslib.load_library('stitch0.so', path)
     fun = lib.corr
