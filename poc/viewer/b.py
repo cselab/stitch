@@ -94,7 +94,7 @@ def pair(i, j):
 
     m_corr = -1
     for mx in range(-hx, hx + 1, 1):
-        sys.stderr.write("[%d] %d / %d: %.3f\n" % (os.getpid(), mx + hx + 1, 2 * hx + 1, m_corr))
+        sys.stderr.write("[%d] [%d %d] %d / %d: %.3f\n" % (os.getpid(), i, j, mx + hx + 1, 2 * hx + 1, m_corr))
         for my in range(-hy, hy + 1, 1):
             for mz in range(-hz, hz + 1, 1):
                 x0l, x0h, x1l, x1h = ov(x0, x1 + mx, n0x, n1x)
