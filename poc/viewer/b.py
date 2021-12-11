@@ -5,10 +5,12 @@ import stitch.glb as glb
 import stitch.mesospim
 import stitch.Rigid as st
 import sys
+import multiprocessing
 
 # STITCH_VERBOSE=1 OMP_NUM_THREADS=1 python3.6 poc/viewer/b.py '/media/user/demeter16TB_3/FCD/FCD/FCD_P-OCX_2.7_NeuN-Cy3 (2)'/*.raw
 
 verbose = True
+processes = 4
 output_path = "rigid.txt"
 try:
     (tx, ty), (nx, ny,
@@ -61,10 +63,7 @@ def ov_roi(r0, r1, n, h):
     r0lb, r0hb, r1lb, r1hb = ov(r0, r1 - h, n, n)
     return min(r0la, r0lb), max(r0ha, r0hb), min(r1la, r1lb), max(r1ha, r1hb)
 
-
-file = open(output_path, "w")
-shifts = [ ]
-for i, j in pairs:
+def pair(i, j):
     x0, y0, z0 = positions[i]
     x1, y1, z1 = positions[j]
     x0l, x0h, x1l, x1h = ov_roi(x0, x1, kx, hx)
@@ -95,7 +94,7 @@ for i, j in pairs:
 
     m_corr = -1
     for mx in range(-hx, hx + 1, 1):
-        sys.stderr.write("%d / %d: %.3f\n" % (mx + hx + 1, 2 * hx + 1, m_corr))
+        sys.stderr.write("[%d] %d / %d: %.3f\n" % (os.getpid(), mx + hx + 1, 2 * hx + 1, m_corr))
         for my in range(-hy, hy + 1, 1):
             for mz in range(-hz, hz + 1, 1):
                 x0l, x0h, x1l, x1h = ov(x0, x1 + mx, n0x, n1x)
@@ -107,12 +106,19 @@ for i, j in pairs:
                 if corr > m_corr:
                     m_x, m_y, m_z = mx, my, mz
                     m_corr = corr
-    file.write("%d %d %d %.16e\n" % (m_x, m_y, m_z, m_corr))
-    file.flush()
-    shifts.append((m_x, m_y, m_z))
-file.close()
+    return m_x, m_y, m_z, m_corr
 
+if processes == 0:
+    ans = [pair(i, j) for i, j in pairs]
+else:
+    with multiprocessing.Pool(processes) as pool:
+        ans = pool.starmap(pair, pairs)
 
+with open(".rigid", "w") as file:
+    for x, y, z, corr in ans:
+        file.write("%d %d %d %.16e\n" % (x, y, z, corr))
+
+shifts = [(x, y, z) for x, y, z, corr in ans]
 positions = st.place(pairs, positions, shifts)
 glb.SRC[:] = (np.memmap(e, dtype, 'r', 0, (nx, ny, nz),
                         order='F')[::sx, ::sy, ::sz] for e in path)
