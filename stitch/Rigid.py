@@ -181,7 +181,9 @@ def overlap0(n, x0, x1):
 def overlap(a, b, n, m):
     assert n >= 0
     assert m >= 0
-    return *overlap0(n, b - a, b - a + m), *overlap0(m, a - b, a - b + n)
+    x0, x1 = overlap0(n, b - a, b - a + m)
+    y0, y1 = overlap0(m, a - b, a - b + n)
+    return x0, x1, y0, y1
 
 def stitch0(shape, positions, verbose):
     sink = glb.SINK[0]
