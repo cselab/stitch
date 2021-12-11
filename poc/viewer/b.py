@@ -82,6 +82,7 @@ def pair(i, j):
 
     roi0 = np.ndarray((n0x, n0y, n0z), dtype=dtype)
     roi1 = np.ndarray((n1x, n1y, n1z), dtype=dtype)
+    sys.stderr.write("[%d] shape [%d %d %d]\n" % (os.getpid(), *np.shape(roi0)))
     np.copyto(roi0, src[i][x0l:x0h, y0l:y0h, z0l:z0h], 'no')
     np.copyto(roi1, src[j][x1l:x1h, y1l:y1h, z1l:z1h], 'no')
 
