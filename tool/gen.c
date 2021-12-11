@@ -24,8 +24,8 @@ static void usg(void) {
 }
 
 static int shift[2][2][3] = {
-    {{0, 0, 0}, {0, 0, 0}},
-    {{0, 0, 0}, {0, 0, 0}},
+    {{1, 2, 3}, {0, 0, 0}},
+    {{0, 0, 0}, {1, 2, 3}},
 };
 
 static uint16_t pattern0(double x, double y, double z) {

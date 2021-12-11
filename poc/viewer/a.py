@@ -2,6 +2,7 @@ import matplotlib.pyplot
 import sys
 import numpy as np
 import os
+import copy
 import stitch.mesospim
 import stitch.Rigid
 
@@ -38,10 +39,10 @@ except ValueError:
 dtype = np.dtype("<u2")
 stride = [8, 8, 8]
 src = [np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F') for e in path]
-positions = []
+positions0 = []
 for x in range(tx):
     for y in range(ty):
-        positions.append([x * (nx - ox), y * (ny - oy), 0])
+        positions0.append([x * (nx - ox), y * (ny - oy), 0])
 if shifts != []:
     pairs = []
     for x in range(tx):
@@ -51,8 +52,10 @@ if shifts != []:
                 pairs.append((i, (x + 1) * ty + y))
             if y + 1 < ty:
                 pairs.append((i, x * ty + y + 1))
-    positions = stitch.Rigid.place(pairs, positions, shifts)
-    print(positions)
+    positions = stitch.Rigid.place(pairs, positions0, shifts)
+    positions = [list(e) for e in positions]
+else:
+    positions = copy.copy(positions0)
 
 fig, ax = matplotlib.pyplot.subplots()
 fig.tight_layout()
@@ -165,8 +168,10 @@ def press(event):
         sys.exit(0)
     elif key == "s":
         print()
-        for x, y, z in positions:
-            print(x, y, z)
+        with open(".shifts", "w") as file:
+            for (x, y, z), (x0, y0, z0) in zip(positions, positions0):
+                print(x, y, z)
+                file.write("%d %d %d %.16e\n" % (x - x0, y - y0, z - z0, 0.0))
 
 
 for i in range(len(src)):
