@@ -50,17 +50,10 @@ for x in range(tx):
         if y + 1 < ty:
             pairs.append((i, x * ty + y + 1))
 
-def ov(a, b, na, nb):
-    l0 = b - a
-    h0 = l0 + na
-    l1 = a - b
-    h1 = l1 + nb
-    return max(l0, 0), min(h0, na), max(l1, 0), min(h1, nb)
-
 
 def ov_roi(r0, r1, n, h):
-    r0la, r0ha, r1la, r1ha = ov(r0, r1 + h, n, n)
-    r0lb, r0hb, r1lb, r1hb = ov(r0, r1 - h, n, n)
+    r0la, r0ha, r1la, r1ha = stitch.Rigid.overlap(r0, r1 + h, n, n)
+    r0lb, r0hb, r1lb, r1hb = stitch.Rigid.overlap(r0, r1 - h, n, n)
     return min(r0la, r0lb), max(r0ha, r0hb), min(r1la, r1lb), max(r1ha, r1hb)
 
 def pair(i, j):
@@ -97,9 +90,9 @@ def pair(i, j):
         sys.stderr.write("[%d] [%d %d] %d / %d: %.3f\n" % (os.getpid(), i, j, mx + hx + 1, 2 * hx + 1, m_corr))
         for my in range(-hy, hy + 1, 1):
             for mz in range(-hz, hz + 1, 1):
-                x0l, x0h, x1l, x1h = ov(x0, x1 + mx, n0x, n1x)
-                y0l, y0h, y1l, y1h = ov(y0, y1 + my, n0y, n1y)
-                z0l, z0h, z1l, z1h = ov(z0, z1 + mz, n0z, n1z)
+                x0l, x0h, x1l, x1h = stitch.Rigid.overlap(x0, x1 + mx, n0x, n1x)
+                y0l, y0h, y1l, y1h = stitch.Rigid.overlap(y0, y1 + my, n0y, n1y)
+                z0l, z0h, z1l, z1h = stitch.Rigid.overlap(z0, z1 + mz, n0z, n1z)
                 a = roi0[x0l:x0h:qx, y0l:y0h:qy, z0l:z0h:qz]
                 b = roi1[x1l:x1h:qx, y1l:y1h:qy, z1l:z1h:qz]
                 corr = stitch.fast.corr(a, b)
