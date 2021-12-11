@@ -124,5 +124,5 @@ ux, uy, uz = st.shape((kx, ky, kz), positions)
 output = os.path.join(ou, "%dx%dx%dle.1.raw" % (ux, uy, uz))
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-st.stitch1((kx, ky, kz), positions, verbose=verbose)
+st.stitch0((kx, ky, kz), positions, verbose=verbose)
 sys.stderr.write("%s\n" % output)
