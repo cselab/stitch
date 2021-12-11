@@ -173,10 +173,12 @@ def shape(shape0, positions):
     ux, uy, uz = np.max(positions, axis=0)
     return ux - lx + kx, uy - ly + ky, uz - lz + kz
 
+
 def overlap0(n, x0, x1):
     assert n >= 0
     assert x1 >= x0
     return min(n, max(x0, 0)), min(n, max(x1, 0))
+
 
 def overlap(a, b, n, m):
     assert n >= 0
@@ -184,6 +186,7 @@ def overlap(a, b, n, m):
     x0, x1 = overlap0(n, b - a, b - a + m)
     y0, y1 = overlap0(m, a - b, a - b + n)
     return x0, x1, y0, y1
+
 
 def stitch0(shape, positions, verbose):
     sink = glb.SINK[0]

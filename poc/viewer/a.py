@@ -3,16 +3,38 @@ import sys
 import numpy as np
 import os
 import stitch.mesospim
+import stitch.Rigid
 
+me = "b.py"
+shifts = []
+while True:
+    sys.argv.pop(0)
+    if len(sys.argv) and len(sys.argv[0]) > 1 and sys.argv[0][0] == '-':
+        if sys.argv[0][1] == 'h':
+            usg()
+        elif sys.argv[0][1] == 'f':
+            sys.argv.pop(0)
+            if len(sys.argv) == 0:
+                sys.stderr.write("%s: not enough arguments for -f\n" % me)
+                sys.exit(1)
+            shift_path = sys.argv[0]
+            with open(shift_path) as file:
+                for line in file:
+                    x, y, z, corr = line.split()
+                    shifts.append((int(x), int(y), int(z)))
+        else:
+            sys.stderr.write("%s: unknown option '%s'\n" % (me, sys.argv[0]))
+            sys.exit(2)
+    else:
+        break
 try:
-    (tx, ty), (nx, ny,
-               nz), (ox, oy), path = stitch.mesospim.read_tiles(sys.argv[1::])
+    (tx, ty), (nx, ny, nz), (ox,
+                             oy), path = stitch.mesospim.read_tiles(sys.argv)
 except ValueError:
     tx = ty = 2
     nx = ny = nz = 200
     ox = oy = 10
-    path = sys.argv[1:]
-
+    path = sys.argv
 dtype = np.dtype("<u2")
 stride = [8, 8, 8]
 src = [np.memmap(e, dtype, 'r', 0, (nx, ny, nz), order='F') for e in path]
@@ -20,6 +42,17 @@ positions = []
 for x in range(tx):
     for y in range(ty):
         positions.append([x * (nx - ox), y * (ny - oy), 0])
+if shifts != []:
+    pairs = []
+    for x in range(tx):
+        for y in range(ty):
+            i = x * ty + y
+            if x + 1 < tx:
+                pairs.append((i, (x + 1) * ty + y))
+            if y + 1 < ty:
+                pairs.append((i, x * ty + y + 1))
+    positions = stitch.Rigid.place(pairs, positions, shifts)
+    print(positions)
 
 fig, ax = matplotlib.pyplot.subplots()
 fig.tight_layout()
