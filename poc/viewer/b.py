@@ -10,7 +10,6 @@ import multiprocessing
 # STITCH_VERBOSE=1 OMP_NUM_THREADS=1 python3.6 poc/viewer/b.py '/media/user/demeter16TB_3/FCD/FCD/FCD_P-OCX_2.7_NeuN-Cy3 (2)'/*.raw
 
 verbose = True
-processes = 4
 output_path = "rigid.txt"
 try:
     (tx, ty), (nx, ny,
@@ -21,6 +20,7 @@ except ValueError:
     ox = oy = 10
     path = sys.argv[1:]
 
+processes = (tx - 1) * ty + tx * (ty - 1)
 dtype = np.dtype("<u2")
 sx = sy = sz = 1
 qx = qy = qz = 32
