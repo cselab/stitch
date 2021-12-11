@@ -198,7 +198,7 @@ def stitch0(shape, positions, verbose):
         sink[xh - 1, yl:yh, zl:zh] = mi
 
 
-def stitch0(shape, positions, verbose):
+def stitch1(shape, positions, verbose):
     sink = glb.SINK[0]
     kx, ky, kz = shape
     n = len(positions)
