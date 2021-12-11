@@ -128,7 +128,7 @@ di = os.path.dirname(path[0])
 ou = os.path.join(di, 'out')
 if not os.path.exists(ou):
     os.makedirs(ou)
-output = os.path.join(ou, "%dx%dx%dle.0.raw" % (ux, uy, uz))
+output = os.path.join(ou, "%dx%dx%dle.1.raw" % (ux, uy, uz))
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
 st.stitch1((kx, ky, kz), positions, verbose=verbose)
