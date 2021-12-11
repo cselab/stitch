@@ -108,20 +108,19 @@ else:
     with multiprocessing.Pool(processes) as pool:
         ans = pool.starmap(pair, pairs)
 
-with open(".shifts", "w") as file:
+di = os.path.dirname(path[0])
+ou = os.path.join(di, 'out')
+if not os.path.exists(ou):
+    os.makedirs(ou)
+with open(os.path.join(ou, ".shifts"), "w") as file:
     for x, y, z, corr in ans:
         file.write("%d %d %d %.16e\n" % (x, y, z, corr))
-
 shifts = [(x, y, z) for x, y, z, corr in ans]
 positions = st.place(pairs, positions, shifts)
 glb.SRC[:] = (np.memmap(e, dtype, 'r', 0, (nx, ny, nz),
                         order='F')[::sx, ::sy, ::sz] for e in path)
 kx, ky, kz = glb.SRC[0].shape
 ux, uy, uz = st.shape((kx, ky, kz), positions)
-di = os.path.dirname(path[0])
-ou = os.path.join(di, 'out')
-if not os.path.exists(ou):
-    os.makedirs(ou)
 output = os.path.join(ou, "%dx%dx%dle.1.raw" % (ux, uy, uz))
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
