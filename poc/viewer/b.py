@@ -114,7 +114,7 @@ else:
     with multiprocessing.Pool(processes) as pool:
         ans = pool.starmap(pair, pairs)
 
-with open(".rigid", "w") as file:
+with open(".shifts", "w") as file:
     for x, y, z, corr in ans:
         file.write("%d %d %d %.16e\n" % (x, y, z, corr))
 
