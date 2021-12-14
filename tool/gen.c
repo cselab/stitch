@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PI (3.141592653589793)
 #define USED(x)                                                                \
@@ -18,7 +19,8 @@ enum { X, Y, Z };
 static const char *me = "gen";
 static void int16_to_little(uint16_t, unsigned char *, unsigned char *);
 static void usg(void) {
-  fprintf(stderr, "%s -n int int int -o int int [-d directory] [-w float]\n",
+  fprintf(stderr,
+          "%s -p 1|2 -n int int int -o int int [-d directory] [-w float]\n",
           me);
   exit(2);
 }
@@ -28,7 +30,7 @@ static int shift[2][2][3] = {
     {{0, 0, 0}, {1, 2, 3}},
 };
 
-static uint16_t pattern0(double x, double y, double z) {
+static uint16_t pattern1(double x, double y, double z) {
   double rsq;
 
   x -= 0.4;
@@ -38,7 +40,7 @@ static uint16_t pattern0(double x, double y, double z) {
   return 0.2 * 0.2 < rsq && rsq < 0.45 * 0.45 ? 100 : 0;
 }
 
-static uint16_t pattern1(double x, double y, double z) {
+static uint16_t pattern2(double x, double y, double z) {
   int i;
   double rsq;
   double u;
@@ -64,6 +66,14 @@ static uint16_t pattern1(double x, double y, double z) {
 static int tx = sizeof shift / sizeof shift[0];
 static int ty = sizeof shift[0] / sizeof shift[0][0];
 
+static const struct {
+  const char *pattern;
+  uint16_t (*function)(double, double, double);
+} Pattern[2] = {
+    {"1", pattern1},
+    {"2", pattern2},
+};
+
 int main(int argc, char **argv) {
   char cmd[FILENAME_MAX];
   char *end;
@@ -84,20 +94,20 @@ int main(int argc, char **argv) {
   int nz;
   int Oflag;
   int overlap[2];
-  int x;
-  int y;
   int wx;
   int wy;
+  int x;
+  int y;
+  uint16_t (*pattern)(double, double, double);
   uint16_t value;
   unsigned char a;
   unsigned char b;
-  uint16_t (*pattern)(double, double, double);
 
   USED(argc);
   Oflag = 0;
   Nflag = 0;
   w = 0;
-  pattern = pattern0;
+  pattern = NULL;
   while (*++argv != NULL && argv[0][0] == '-')
     switch (argv[0][1]) {
     case 'h':
@@ -107,26 +117,43 @@ int main(int argc, char **argv) {
       argv++;
       if (argv[0] == NULL) {
         fprintf(stderr, "%s: -d needs an argument\n", me);
-        exit(2);
+        exit(1);
       }
       directory = *argv;
+      break;
+    case 'p':
+      argv++;
+      if (argv[0] == NULL) {
+        fprintf(stderr, "%s: -p needs an argument\n", me);
+        exit(1);
+      }
+      for (i = 0;; i++) {
+        if (i == sizeof Pattern / sizeof *Pattern) {
+          fprintf(stderr, "%s: wrong pattern '%s'\n", me, argv[0]);
+          exit(1);
+        }
+        if (strcmp(argv[0], Pattern[i].pattern) == 0) {
+          pattern = Pattern[i].function;
+          break;
+        }
+      }
       break;
     case 'o':
       argv++;
       if (argv[0] == NULL || argv[1] == NULL) {
         fprintf(stderr, "%s: -o needs two arguments\n", me);
-        exit(2);
+        exit(1);
       }
       overlap[X] = strtol(*argv, &end, 10);
       if (errno != 0 || *end != '\0') {
         fprintf(stderr, "%s: not an integer '%s'\n", me, *argv);
-        exit(2);
+        exit(1);
       }
       argv++;
       overlap[Y] = strtol(*argv, &end, 10);
       if (errno != 0 || *end != '\0') {
         fprintf(stderr, "%s: not an integer '%s'\n", me, *argv);
-        exit(2);
+        exit(1);
       }
       Oflag = 1;
       break;
@@ -134,24 +161,24 @@ int main(int argc, char **argv) {
       argv++;
       if (argv[0] == NULL || argv[1] == NULL || argv[2] == NULL) {
         fprintf(stderr, "%s: -n needs three arguments\n", me);
-        exit(2);
+        exit(1);
       }
       nx = strtol(*argv, &end, 10);
       if (errno != 0 || *end != '\0') {
         fprintf(stderr, "%s: not an integer '%s'\n", me, *argv);
-        exit(2);
+        exit(1);
       }
       argv++;
       ny = strtol(*argv, &end, 10);
       if (errno != 0 || *end != '\0') {
         fprintf(stderr, "%s: not an integer '%s'\n", me, *argv);
-        exit(2);
+        exit(1);
       }
       argv++;
       nz = strtol(*argv, &end, 10);
       if (errno != 0 || *end != '\0') {
         fprintf(stderr, "%s: not an integer '%s'\n", me, *argv);
-        exit(2);
+        exit(1);
       }
       Nflag = 1;
       break;
@@ -159,12 +186,12 @@ int main(int argc, char **argv) {
       argv++;
       if (argv[0] == NULL) {
         fprintf(stderr, "%s: -w needs an argument\n", me);
-        exit(2);
+        exit(1);
       }
       w = strtod(*argv, &end);
       if (errno != 0 || *end != '\0') {
         fprintf(stderr, "%s: not a float '%s'\n", me, *argv);
-        exit(2);
+        exit(1);
       }
       break;
     default:
@@ -177,6 +204,10 @@ int main(int argc, char **argv) {
   }
   if (Nflag == 0) {
     fprintf(stderr, "%s: -n is not set\n", me);
+    exit(1);
+  }
+  if (pattern == NULL) {
+    fprintf(stderr, "%s: -p is not set\n", me);
     exit(1);
   }
   snprintf(cmd, sizeof cmd, "mkdir -p '%s' 2>/dev/null", directory);

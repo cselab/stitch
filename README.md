@@ -28,7 +28,7 @@ $ make
 Generate four files with fake input
 <pre>
 $ (cd tool && make)
-$ tool/gen -n 200 200 200 -o 10 10
+$ tool/gen -p 1 -n 200 200 200 -o 10 10
 $ ls -1 *.raw
 200x200x200le.00.00.raw
 200x200x200le.00.01.raw
