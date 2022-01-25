@@ -21,9 +21,9 @@ except ValueError:
 processes = (tx - 1) * ty + tx * (ty - 1)
 dtype = np.dtype("<u2")
 sx = sy = sz = 1
-qx = qy = qz = 32
+qx = qy = qz = 16
 
-frac = 20
+frac = 10
 zl = (frac - 1) * nz // (2 * frac)
 zh = (frac + 1) * nz // (2 * frac)
 
@@ -129,5 +129,5 @@ ux, uy, uz = st.shape((kx, ky, kz), positions)
 output = os.path.join(ou, "%dx%dx%dle.1.raw" % (ux, uy, uz))
 sink = np.memmap(output, dtype, 'w+', 0, (ux, uy, uz), order='F')
 glb.SINK[:] = [sink]
-st.stitch0((kx, ky, kz), positions, verbose=verbose)
+st.stitch1((kx, ky, kz), positions, verbose=verbose)
 sys.stderr.write("%s\n" % output)
