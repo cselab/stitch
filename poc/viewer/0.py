@@ -80,22 +80,6 @@ def press(event):
         for i in range(n):
             draw(i)
         fig.canvas.draw()
-    elif key == "h":
-        positions[se[0]][0] -= stride[0]
-        draw(se[0])
-        fig.canvas.draw()
-    elif key == "l":
-        positions[se[0]][0] += stride[0]
-        draw(se[0])
-        fig.canvas.draw()
-    elif key == "j":
-        positions[se[0]][1] -= stride[1]
-        draw(se[0])
-        fig.canvas.draw()
-    elif key == "k":
-        positions[se[0]][1] += stride[1]
-        draw(se[0])
-        fig.canvas.draw()
     elif key == "i":
         positions[se[0]][2] -= stride[2]
         draw(se[0])
@@ -104,14 +88,6 @@ def press(event):
         positions[se[0]][2] += stride[2]
         draw(se[0])
         fig.canvas.draw()
-    elif key == "z":
-        if art[se[0]] == None:
-            draw(se[0])
-            fig.canvas.draw()
-        else:
-            art[se[0]].remove()
-            art[se[0]] = None
-            fig.canvas.draw()
     elif key == "R":
         stride[:] = [2 * e for e in stride]
         for i in range(n):
@@ -124,13 +100,6 @@ def press(event):
         fig.canvas.draw()
     elif key == "q":
         sys.exit(0)
-    elif key == "s":
-        print()
-        with open(".shifts", "w") as file:
-            for (x, y, z), (x0, y0, z0) in zip(positions, positions0):
-                print(x, y, z)
-                file.write("%d %d %d %.16e\n" % (x - x0, y - y0, z - z0, 0.0))
-
 
 draw(0)
 fig.canvas.mpl_connect('key_press_event', press)
