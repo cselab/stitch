@@ -3,12 +3,19 @@ import sys
 import numpy as np
 import os
 import copy
+import re
 
 me = "0.py"
 shifts = []
-nx = ny = nz = 200
 dtype = np.dtype("<u2")
 stride = [8, 8, 8]
+
+base = os.path.basename(sys.argv[1])
+base = base.split("x")
+nx = int(base[0])
+ny = int(base[1])
+nz = int(re.sub("[lb]e.*", "", base[2]))
+
 src = np.memmap(sys.argv[1], dtype, 'r', 0, (nx, ny, nz), order='F')
 positions0 = [0, 0, 0]
 positions = copy.copy(positions0)
@@ -18,13 +25,12 @@ fig.tight_layout()
 fig.canvas.mpl_disconnect(fig.canvas.manager.key_press_handler_id)
 fig.canvas.manager.full_screen_toggle()
 ax.axis('off')
-lx = nx
-ly = ny
-ax.set_xlim((-lx / 10, 11 * lx / 10))
-ax.set_ylim((-ly / 10, 11 * ly / 10))
+ax.set_xlim((-nx / 10, 11 * nx / 10))
+ax.set_ylim((-ny / 10, 11 * ny / 10))
 
 zslice = [nz // 2]
 art = [None for e in src]
+
 
 def draw(i):
     x, y, z = positions
@@ -69,6 +75,7 @@ def press(event):
         fig.canvas.draw()
     elif key == "q":
         sys.exit(0)
+
 
 draw(0)
 fig.canvas.mpl_connect('key_press_event', press)
