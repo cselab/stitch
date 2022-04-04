@@ -45,13 +45,9 @@ def draw(i):
     cmap = 'Greens'
     if art[i] is not None:
         art[i].remove()
-    vmin = np.quantile(s, 0.1)
-    vmax = np.quantile(s, 0.9)
     art[i] = matplotlib.pyplot.imshow(s.T,
                                       alpha=0.5,
                                       cmap=cmap,
-                                      vmin=vmin,
-                                      vmax=vmax,
                                       extent=extent)
 
 
