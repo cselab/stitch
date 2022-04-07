@@ -56,7 +56,7 @@ def one(idx):
         for c in range(dimensions[3]):
             a = array[:, :, Slice - lo[2], c]
             if Verbose:
-                sys.stderr.write("%s: %g %g %g\n" % (np.min(a), np.mean(a), np.max(a)))
+                sys.stderr.write("%s: %g %g %g\n" % (me, np.min(a), np.mean(a), np.max(a)))
             np.copyto(output[c][lo[0]:hi[0], lo[1]:hi[1]],
                       a, 'no')
 
