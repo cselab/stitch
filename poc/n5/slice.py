@@ -6,26 +6,34 @@ import os
 import sys
 
 me = "n5"
+
+
 def read(file, dtype):
     buffer = file.read(dtype.itemsize)
     array = np.ndarray(1, dtype, buffer)
     return array[0]
 
+
 def read16(file):
     return read(file, np.dtype(">u2"))
+
 
 def read32(file):
     return read(file, np.dtype(">u4"))
 
+
 def usg():
-    sys.stderr.write("%s -i path.n5 [-o .] [-v]\n" % me)
+    sys.stderr.write("%s -i path.n5 -s int [-o .] [-v]\n" % me)
     sys.exit(2)
+
 
 def one(idx):
     if Verbose:
-        sys.stderr.write("%s: %s: %s from %s\n" % (me, os.getpid(), idx, blockNumber))
+        sys.stderr.write("%s: %s: %s from %s\n" %
+                         (me, os.getpid(), idx, blockNumber))
     lo = tuple(a * b for a, b in zip(idx, blockSize))
-    hi = tuple(min((a + 1) * b, c) for a, b, c in zip(idx, blockSize, dimensions))
+    hi = tuple(
+        min((a + 1) * b, c) for a, b, c in zip(idx, blockSize, dimensions))
     shape = tuple(b - a for a, b in zip(lo, hi))
     path0 = os.path.join(path, "exported_data", *map(str, idx))
     if not os.path.isfile(path0):
@@ -36,7 +44,8 @@ def one(idx):
             sys.stderr.write("%s: fail to read zero in '%s'\n" % (me, path0))
             sys.exit(2)
         if read16(file) != len(idx):
-            sys.stderr.write("%s: fail to number of dimensions in '%s'\n" % (me, path0))
+            sys.stderr.write("%s: fail to number of dimensions in '%s'\n" %
+                             (me, path0))
             sys.exit(2)
         if tuple(read32(file) for dim in idx) != shape:
             sys.stderr.write("%s: wrong shape in '%s'\n" % (me, path0))
@@ -45,8 +54,9 @@ def one(idx):
             buffer = gz.read()
             array = np.ndarray(shape, np.dtype("<f4"), buffer, order='F')
         for c in range(dimensions[3]):
-            np.copyto(output[c][lo[0]:hi[0], lo[1]:hi[1], lo[2]:hi[2]],
-                      array[:, :, :, c], 'no')
+            np.copyto(output[c][lo[0]:hi[0], lo[1]:hi[1]],
+                      array[:, :, Slice - lo[2], c], 'no')
+
 
 path = None
 dir = "."
@@ -76,7 +86,11 @@ while True:
             if len(sys.argv) == 0:
                 sys.stderr.write("%s: -s needs an argument\n" % me)
                 sys.exit(2)
-            Slice = int(sys.argv[0])
+            try:
+                Slice = int(sys.argv[0])
+            except ValueError:
+                sys.stderr.write("%s: -s needs an integer\n" % me)
+                sys.exit(2)
         else:
             sys.stderr.write("%s: unknown option '%s'\n" % (me, sys.argv[0]))
             sys.exit(2)
@@ -92,7 +106,6 @@ if Slice == None:
 if not os.path.isdir(path):
     sys.stderr.write("%s: '%s' is not a directory\n" % (me, path))
     sys.exit(2)
-
 
 with open(os.path.join(path, "attributes.json")) as file:
     js = json.load(file)
@@ -112,14 +125,24 @@ with open(os.path.join(path, "exported_data", "attributes.json")) as file:
         sys.exit(2)
 
 blockNumber = tuple((a + b - 1) // b for a, b in zip(dimensions, blockSize))
-dim = dimensions[0], dimensions[1], dimensions[2]
+dim = dimensions[0], dimensions[1],
+
+if Slice < 0 or Slice >= dimensions[2]:
+    sys.stderr.write("%s: invalid slice %d/%d\n" % (me, Slice, dimensions[2]))
+    sys.exit(2)
 
 os.makedirs(dir, exist_ok=True)
-output_path = [os.path.join(dir, "%dx%dx%dbe.%d.raw" % (*dim, c)) for c in range(dimensions[3])]
+output_path = [
+    os.path.join(dir, "%dx%dbe.%d.raw" % (*dim, c))
+    for c in range(dimensions[3])
+]
 output = [np.memmap(p, "<f4", 'w+', 0, dim, 'F') for p in output_path]
 if Verbose:
     for p in output_path:
         sys.stderr.write("%s: %s\n" % (me, p))
 
-for idx in itertools.product(*map(range, blockNumber)):
-    one(idx)
+z = Slice // blockSize[2]
+for x in range(blockNumber[0]):
+    for y in range(blockNumber[1]):
+        for c in range(blockNumber[3]):
+            one((x, y, z, c))
