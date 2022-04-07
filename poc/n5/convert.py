@@ -44,7 +44,7 @@ def one(idx):
             sys.exit(2)
         with gzip.GzipFile(fileobj=file) as gz:
             buffer = gz.read()
-            array = np.ndarray(shape, np.dtype("<f4"), buffer, order='F')
+            array = np.ndarray(shape, np.dtype(">f4"), buffer, order='F')
         for c in range(dimensions[3]):
             np.copyto(output[c][lo[0]:hi[0], lo[1]:hi[1], lo[2]:hi[2]],
                       array[:, :, :, c], 'no')
@@ -110,7 +110,7 @@ dim = dimensions[0], dimensions[1], dimensions[2]
 
 os.makedirs(dir, exist_ok=True)
 output_path = [os.path.join(dir, "%dx%dx%dbe.%d.raw" % (*dim, c)) for c in range(dimensions[3])]
-output = [np.memmap(p, "<f4", 'w+', 0, dim, 'F') for p in output_path]
+output = [np.memmap(p, ">f4", 'w+', 0, dim, 'F') for p in output_path]
 if Verbose:
     for p in output_path:
         sys.stderr.write("%s: %s\n" % (me, p))
