@@ -4,7 +4,6 @@ import json
 import numpy as np
 import os
 import sys
-import multiprocessing
 
 me = "n5"
 def read(file, dtype):
@@ -19,7 +18,7 @@ def read32(file):
     return read(file, np.dtype(">u4"))
 
 def usg():
-    sys.stderr.write("%s -i path.n5 [-o .] [-v] [-p]\n" % me)
+    sys.stderr.write("%s -i path.n5 [-o .] [-v]\n" % me)
     sys.exit(2)
 
 def one(idx):
@@ -52,7 +51,7 @@ def one(idx):
 path = None
 dir = "."
 Verbose = False
-Parallel = False
+Slice = None
 while True:
     sys.argv.pop(0)
     if len(sys.argv) and len(sys.argv[0]) > 1 and sys.argv[0][0] == '-':
@@ -72,8 +71,12 @@ while True:
             dir = sys.argv[0]
         elif sys.argv[0][1] == 'v':
             Verbose = True
-        elif sys.argv[0][1] == 'p':
-            Parallel = True
+        elif sys.argv[0][1] == 's':
+            sys.argv.pop(0)
+            if len(sys.argv) == 0:
+                sys.stderr.write("%s: -s needs an argument\n" % me)
+                sys.exit(2)
+            Slice = int(sys.argv[0])
         else:
             sys.stderr.write("%s: unknown option '%s'\n" % (me, sys.argv[0]))
             sys.exit(2)
@@ -81,6 +84,9 @@ while True:
         break
 if path == None:
     sys.stderr.write("%s: -i must be set\n" % me)
+    sys.exit(2)
+if Slice == None:
+    sys.stderr.write("%s: -s must be set\n" % me)
     sys.exit(2)
 
 if not os.path.isdir(path):
@@ -115,10 +121,5 @@ if Verbose:
     for p in output_path:
         sys.stderr.write("%s: %s\n" % (me, p))
 
-idxs = itertools.product(*map(range, blockNumber))
-if Parallel:
-    with multiprocessing.Pool() as p:
-        p.map(one, idxs)
-else:
-    for idx in idxs:
-        one(idx)
+for idx in itertools.product(*map(range, blockNumber)):
+    one(idx)
