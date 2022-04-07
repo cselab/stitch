@@ -29,8 +29,8 @@ def usg():
 
 def one(idx):
     if Verbose:
-        sys.stderr.write("%s: %s: %s from %s\n" %
-                         (me, os.getpid(), idx, blockNumber))
+        sys.stderr.write("%s: %s from %s\n" %
+                         (me, idx, blockNumber))
     lo = tuple(a * b for a, b in zip(idx, blockSize))
     hi = tuple(
         min((a + 1) * b, c) for a, b, c in zip(idx, blockSize, dimensions))
