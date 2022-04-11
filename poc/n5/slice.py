@@ -53,10 +53,10 @@ def one(idx):
         with gzip.GzipFile(fileobj=file) as gz:
             buffer = gz.read()
             array = np.ndarray(shape, np.dtype(">f4"), buffer, order='F')
-        for c in range(dimensions[3]):
-            a = array[:, :, Slice - lo[2], c]
+        for c in range(dimensions[2]):
+            a = array[:, :, c, Slice - lo[2]]
             if Verbose:
-                sys.stderr.write("%s: %g %g %g\n" % (me, np.min(a), np.mean(a), np.max(a)))
+                sys.stderr.write("%s: %.3f %.3f %.3f\n" % (me, np.min(a), np.mean(a), np.max(a)))
             np.copyto(output[c][lo[0]:hi[0], lo[1]:hi[1]],
                       a, 'no')
 
@@ -123,29 +123,29 @@ with open(os.path.join(path, "exported_data", "attributes.json")) as file:
     if js["dataType"] != 'float32':
         sys.stderr.write("%s: unknown dataType: %s\n" % (me, js["dataType"]))
         sys.exit(2)
-    if js["axes"] != ['x', 'y', 'z', 'c']:
+    if js["axes"] != ['x', 'y', 'c', 'z']:
         sys.stderr.write("%s: unknown axes: %s\n" % (me, js["axes"]))
         sys.exit(2)
 
 blockNumber = tuple((a + b - 1) // b for a, b in zip(dimensions, blockSize))
 dim = dimensions[0], dimensions[1],
 
-if Slice < 0 or Slice >= dimensions[2]:
-    sys.stderr.write("%s: invalid slice %d/%d\n" % (me, Slice, dimensions[2]))
+if Slice < 0 or Slice >= dimensions[3]:
+    sys.stderr.write("%s: invalid slice %d/%d\n" % (me, Slice, dimensions[3]))
     sys.exit(2)
 
 os.makedirs(dir, exist_ok=True)
 output_path = [
     os.path.join(dir, "%dx%dbe.%d.raw" % (*dim, c))
-    for c in range(dimensions[3])
+    for c in range(dimensions[2])
 ]
 output = [np.memmap(p, ">f4", 'w+', 0, dim, 'F') for p in output_path]
 if Verbose:
     for p in output_path:
         sys.stderr.write("%s: %s\n" % (me, p))
 
-z = Slice // blockSize[2]
+z = Slice // blockSize[3]
 for x in range(blockNumber[0]):
     for y in range(blockNumber[1]):
-        for c in range(blockNumber[3]):
+        for c in range(blockNumber[2]):
             one((x, y, z, c))
