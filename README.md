@@ -8,10 +8,8 @@ of <a href="https://christophkirst.github.io/ClearMap2Documentation/html/wobblys
 <h2>Dependencies</h2>
 
 <pre>
-$ python3 -m pip install --no-deps numpy scikit-image scipy pywavelets
+$ python3 -m pip install --no-deps numpy scikit-image scipy
 </pre>
-
-C compiler.
 
 <h2>Install</h2>
 

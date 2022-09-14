@@ -4,7 +4,6 @@ import os
 import sys
 import stitch.glb as glb
 import stitch.union_find
-import stitch.fast
 
 
 def padding0(s1, p2, s2, minx, maxx):
@@ -51,12 +50,12 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
     d2 = min(depth, shape[axis])
     if axis == 0:
         shift = shift[1], shift[2]
-        mip1 = stitch.fast.amax(glb.SRC[src1][d1:, :, :], axis)
-        mip2 = stitch.fast.amax(glb.SRC[src2][:d2, :, :], axis)
+        mip1 = np.amax(glb.SRC[src1][d1:, :, :], axis)
+        mip2 = np.amax(glb.SRC[src2][:d2, :, :], axis)
     else:
         shift = shift[0], shift[2]
-        mip1 = stitch.fast.amax(glb.SRC[src1][:, d1:, :], axis)
-        mip2 = stitch.fast.amax(glb.SRC[src2][:, :d2, :], axis)
+        mip1 = np.amax(glb.SRC[src1][:, d1:, :], axis)
+        mip2 = np.amax(glb.SRC[src2][:, :d2, :], axis)
     if verbose:
         sys.stderr.write('Rigid [%d] MIP shape [%d %d]\n' %
                          (os.getpid(), *mip1.shape))
