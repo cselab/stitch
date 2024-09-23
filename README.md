@@ -26,7 +26,7 @@ $ make
 Generate four files with fake input
 <pre>
 $ (cd tool && make)
-$ tool/gen -p 1 -n 200 200 200 -o 10 10
+$ tool/gen -p 1 -n 200 200 200 -o 15 15
 $ ls -1 *.raw
 200x200x200le.00.00.raw
 200x200x200le.00.01.raw
@@ -40,11 +40,11 @@ stitch
 <pre>
 $ python3 main.py
 main.py: processes = 4
-391x391x200le.raw
-391x391.pgm
+387x387x203le.raw
+387x387.pgm
 </pre>
 
-Open <tt>391x391x200le.raw</tt> in ImageJ.
+Open <tt>387x387x203le.raw</tt> in ImageJ.
 
 <p align="center"><img src="img/sample.png" alt="sample output"/></p>
 
