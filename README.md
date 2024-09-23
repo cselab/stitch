@@ -52,7 +52,7 @@ Open <tt>387x387x203le.raw</tt> in ImageJ.
 
 <a href="https://imagej.net/plugins/bigstitcher">BigStitcher</a></br>
 <a href="https://abria.github.io/TeraStitcher">TeraStitcher</a></br>
-<a href="https://christophkirst.github.io/ClearMap2Documentation/html/home.html">ClearMap</a>
+<a href="https://clearanatomics.github.io/ClearMapDocumentation">ClearMap</a>
 
 <h2>References</h2>
 
