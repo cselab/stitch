@@ -49,6 +49,8 @@ shifts, qualities = st.align((kx, ky, kz),
                              processes=processes,
                              verbose=verbose)
 positions = st.place(pairs, positions, shifts)
+for name, pos in zip(path, positions):
+    sys.stderr.write(f"main.py: {name}: {pos}\n")
 displacements, qualities, status = stw.align(
     (kx, ky, kz),
     pairs,
