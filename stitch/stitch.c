@@ -56,17 +56,17 @@ int amax1(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx, uint64_t sy,
   int Verbose;
   Verbose = getenv("STITCH_VERBOSE") != NULL;
   if (Verbose) {
-    fprintf(stderr, "stitch.fast.amax0: %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
+    fprintf(stderr, "stitch.fast.amax1: %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
             nx, ny, nz);
-    fprintf(stderr, "stitch.fast.amax0: %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
+    fprintf(stderr, "stitch.fast.amax1: %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
             sx, sy, sz);
-    fprintf(stderr, "stitch.fast.amax0: %" PRIu64 " %" PRIu64 "\n", ox, oz);
+    fprintf(stderr, "stitch.fast.amax1: %" PRIu64 " %" PRIu64 "\n", ox, oz);
   }
 
 #pragma omp parallel for
   for (uint64_t k = 0; k < nz; k++) {
     if (Verbose)
-      fprintf(stderr, "stitch.fast.amax0 [%d]: %" PRIu64 " / %" PRIu64 "\n",
+      fprintf(stderr, "stitch.fast.amax1 [%d]: %" PRIu64 " / %" PRIu64 "\n",
               omp_get_thread_num(), k + 1, nz);
     for (uint64_t i = 0; i < nx; i++) {
       type ma;
@@ -114,7 +114,8 @@ double corr(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx0, uint64_t sy0,
             sy1, sz1);
   }
   s_xx = s_xy = s_yy = s_x = s_y = 0;
-#pragma omp parallel for
+  /* one reduction per sum: atomics on every voxel serialize the threads */
+#pragma omp parallel for reduction(+ : s_xx, s_yy, s_xy, s_x, s_y)
   for (uint64_t k = 0; k < nz; k++) {
     if (Verbose)
       fprintf(stderr, "stitch.corr [%d]: %" PRIu64 " / %" PRIu64 "\n",
@@ -123,25 +124,15 @@ double corr(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx0, uint64_t sy0,
       const uint8_t *a0 = a + k * sz0 + j * sy0;
       const uint8_t *b0 = b + k * sz1 + j * sy1;
       for (uint64_t i = 0; i < nx; i++) {
-        type x;
-        type y;
-        type_sum xx;
-        type_sum yy;
-        type_sum xy;
-        x = (type_sum) * (type *)(a0 + i * sx0);
-        y = (type_sum) * (type *)(b0 + i * sx1);
-        xx = x * x;
-        yy = y * y;
-        xy = x * y;
-#pragma omp atomic
-        s_xx += xx;
-#pragma omp atomic
-        s_yy += yy;
-#pragma omp atomic
-        s_xy += xy;
-#pragma omp atomic
+        /* 64-bit products: uint16 * uint16 promotes to int and overflows */
+        type_sum x;
+        type_sum y;
+        x = *(type *)(a0 + i * sx0);
+        y = *(type *)(b0 + i * sx1);
+        s_xx += x * x;
+        s_yy += y * y;
+        s_xy += x * y;
         s_x += x;
-#pragma omp atomic
         s_y += y;
       }
     }

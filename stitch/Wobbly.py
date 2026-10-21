@@ -1,3 +1,4 @@
+import functools
 import math
 import multiprocessing as mp
 import numpy as np
@@ -56,19 +57,19 @@ def fix_unaligned(status, displacements, qualities):
         return
     if len(starts) == 1 and starts[0] == 0 and len(
             ends) == 1 and ends[0] == n_status:
-        status[:] = self.INVALID
+        status[:] = INVALID
         return
     for s, e in zip(starts, ends):
-        if s > 0 and status[s - 1] >= self.VALID:
+        if s > 0 and status[s - 1] >= VALID:
             left = displacements[[s - 1]]
         else:
             left = None
-        if e < n_status and status[e] >= self.VALID:
+        if e < n_status and status[e] >= VALID:
             right = displacements[[e]]
         else:
             right = None
         if left is None and right is None:
-            status[s:e] = self.INVALID
+            status[s:e] = INVALID
         else:
             if left is None:
                 displacements[s:e] = right
@@ -114,7 +115,7 @@ def origin_wobbly(positions, wobble):
 def align(shape, pairs, positions, max_shifts, prepare, find_shifts, verbose,
           processes):
     if verbose:
-        sys.stderr.write('Wobbly: start align')
+        sys.stderr.write('Wobbly: start align\n')
     args = (shape, max_shifts, prepare, find_shifts, verbose)
     if processes == 'serial':
         results = [
@@ -122,7 +123,7 @@ def align(shape, pairs, positions, max_shifts, prepare, find_shifts, verbose,
             for i, j in pairs
         ]
     else:
-        with mp.Pool(processes) as e:
+        with mp.get_context("fork").Pool(processes) as e:
             results = e.starmap(align_pair,
                                 ((i, positions[i], j, positions[j]) + args
                                  for i, j in pairs))
@@ -346,7 +347,7 @@ def place0(shape, pairs, positions, displacements, qualities, status, smooth,
             for t in zip(s_displacements, s_qualities, s_status)
         ]
     else:
-        with mp.Pool(processes) as e:
+        with mp.get_context("fork").Pool(processes) as e:
             results = e.starmap(
                 place_slice,
                 (t + args
@@ -387,10 +388,9 @@ def place1(shape, positions, positions_new, components, smooth, processes,
         po = positions_optimized[i]
         start = positions[i][2]
         stop = start + shape[2]
-        wobble[i][:] = po[start:stop]
-        finite = np.all(np.isfinite(p[start:stop]), axis=1)
-        non_finite = np.logical_not(finite)
-        status[i][non_finite] = S_INVALID
+        finite = np.all(np.isfinite(po[start:stop]), axis=1)
+        wobble[i][finite] = po[start:stop][finite]
+        status[i][np.logical_not(finite)] = S_INVALID
     return wobble, status
 
 
@@ -561,7 +561,7 @@ def _optimize_slice_positions(positions, components, processes, verbose):
         if isinstance(processes, int):
             glb.MM[:] = M
             glb.XX[:] = X
-            with mp.Pool(min(processes, ndim)) as e:
+            with mp.get_context("fork").Pool(min(processes, ndim)) as e:
                 shifts = e.map(_optimize_shifts, range(len(M)))
             shifts = np.array(shifts).T
         else:
@@ -676,7 +676,7 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
         for sl in slices:
             stitch_slice(*(sl + args))
     else:
-        with mp.Pool(processes) as e:
+        with mp.get_context("fork").Pool(processes) as e:
             e.starmap(stitch_slice, (sl + args for sl in slices))
 
 
@@ -794,6 +794,7 @@ def stitch_slice(slice_id, layout, shape0, n_slices, ox, oy, sx, sy, verbose):
                                                                 syl:syu], 'no')
 
 
+@functools.lru_cache(maxsize=None)
 def stitch_weights(x, y):
     rx = np.arange(x)
     ry = np.arange(y)

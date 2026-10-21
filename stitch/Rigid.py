@@ -135,7 +135,7 @@ def align(shape, pairs, positions, tile_position, depth, max_shifts, clip,
     if processes == 'serial':
         results = [align_pair(*(a2arg(i, j) + args)) for i, j in pairs]
     else:
-        with mp.Pool(processes) as e:
+        with mp.get_context("fork").Pool(processes) as e:
             results = e.starmap(align_pair,
                                 (a2arg(i, j) + args for i, j in pairs))
     return zip(*results)
