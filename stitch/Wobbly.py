@@ -3,6 +3,8 @@ import math
 import multiprocessing as mp
 import numpy as np
 import os
+import scipy.sparse
+import scipy.sparse.linalg
 import skimage.feature as skif
 import stitch.glb as glb
 import stitch.Rigid as strg
@@ -537,8 +539,10 @@ def _optimize_slice_positions(positions, components, processes, verbose):
             d_to_si[d] = (s, i)
 
         s0, i0 = c_to_si(cluster_component[0])
-        X = [np.zeros(n_s) for d in range(ndim)]
-        M = [np.zeros((n_s, n_s)) for d in range(ndim)]
+        # each cluster is tied only to clusters in the slices above and below: the matrix is
+        # sparse, and the same for every dimension (only the right-hand sides X differ)
+        X = np.zeros((n_s, ndim))
+        rows, cols, vals = [], [], []
         for ci, c in enumerate(cluster_component[1:]):
             s, i = c_to_si(c)
             C_si = components[s][i]
@@ -552,12 +556,10 @@ def _optimize_slice_positions(positions, components, processes, verbose):
                         f = si_to_d[(t, j)]
                     for k in C_si:
                         if k in C_tj:
-                            for e in range(ndim):
-                                X[e][d] += positions[s, k, e] - positions[t, k,
-                                                                          e]
-                                M[e][d, d] += 1
-                                if not is_first:
-                                    M[e][d, f] -= 1
+                            X[d] += positions[s, k] - positions[t, k]
+                            rows.append(d), cols.append(d), vals.append(1)
+                            if not is_first:
+                                rows.append(d), cols.append(f), vals.append(-1)
 
             r = s - 1
             if r >= 0:
@@ -568,29 +570,19 @@ def _optimize_slice_positions(positions, components, processes, verbose):
                         f = si_to_d[(r, j)]
                     for k in C_si:
                         if k in C_rj:
-                            for e in range(ndim):
-                                X[e][d] -= positions[r, k, e] - positions[s, k,
-                                                                          e]
-                                M[e][d, d] += 1
-                                if not is_first:
-                                    M[e][d, f] -= 1
+                            X[d] -= positions[r, k] - positions[s, k]
+                            rows.append(d), cols.append(d), vals.append(1)
+                            if not is_first:
+                                rows.append(d), cols.append(f), vals.append(-1)
 
         if verbose:
             sys.stderr.write(
                 'Placement: done constructing constraints for component %d/%d\n'
                 % (cci, n_components))
-        if isinstance(processes, int):
-            glb.MM[:] = M
-            glb.XX[:] = X
-            with mp.get_context("fork").Pool(min(processes, ndim)) as e:
-                shifts = e.map(_optimize_shifts, range(len(M)))
-            shifts = np.array(shifts).T
-        else:
-            shifts = [
-                np.linalg.lstsq(-M[e], X[e], rcond=None)[0]
-                for e in range(ndim)
-            ]
-            shifts = np.asarray(np.round(shifts), dtype=int).T
+        # duplicate (row, col) entries are summed, as the dense += did
+        M = scipy.sparse.csc_matrix((vals, (rows, cols)), shape=(n_s, n_s))
+        shifts = _solve(-M, X)
+        shifts = np.asarray(np.round(shifts), dtype=int)
         for c in cluster_component[1:]:
             s, i = c_to_si(c)
             C_si = components[s][i]
@@ -604,9 +596,16 @@ def _optimize_slice_positions(positions, components, processes, verbose):
     return positions
 
 
-def _optimize_shifts(i):
-    ss = np.linalg.lstsq(-glb.MM[i], glb.XX[i], rcond=-1)[0]
-    return np.asarray(np.round(ss), dtype=int)
+def _solve(A, b):
+    """A x = b for every column of b: a sparse LU when A is regular (one cluster of each
+    component is fixed, so it normally is), least squares otherwise"""
+    if A.shape[0] == 0:
+        return np.zeros(b.shape)
+    try:
+        return scipy.sparse.linalg.splu(A).solve(b)
+    except RuntimeError:            # singular: fall back to the least-squares solution
+        return np.stack([scipy.sparse.linalg.lsqr(A, b[:, e])[0] for e in range(b.shape[1])],
+                        axis=1)
 
 
 def smooth_binary(x, width=1):
