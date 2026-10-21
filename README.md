@@ -1,8 +1,8 @@
 <h1>WobblyStitcher</h1>
 
-<h2>Introduction</h2
+<h2>Introduction</h2>
 
-A scalable implementation
+A scalable, out-of-memory, barebones implementation
 of <a href="https://christophkirst.github.io/ClearMap2Documentation/html/wobblystitcher.html#wobblystitcher">WobblyStitcher</a>
 
 <h2>Dependencies</h2>
@@ -47,6 +47,38 @@ main.py: processes = 4
 Open <tt>387x387x203le.raw</tt> in ImageJ.
 
 <p align="center"><img src="img/sample.png" alt="sample output"/></p>
+
+<h2>Wobbly example</h2>
+
+Generate four tiles with vessels and a 30 pixel overlap. Every tile
+except the first wobbles in x and y along z.
+<pre>
+$ tool/gen -p 3 -n 200 200 200 -o 30 30 -w 6
+$ python3 img.py
+img.py: img/wobble.xy.png img/merge.xy.png
+img.py: img/wobble.xz.png img/merge.xz.png
+</pre>
+
+Center of the stitched volume where the four tiles meet: rigid
+alignment (left) and wobbly alignment (right). Top view
+
+<p align="center"><img src="img/wobble.xy.png" alt="top view, rigid and wobbly"/></p>
+
+side view
+
+<p align="center"><img src="img/wobble.xz.png" alt="side view, rigid and wobbly"/></p>
+
+ImageJ style merge: rigid in magenta, wobbly in green, white where
+they agree. Top view and side view
+
+<p align="center"><img src="img/merge.xy.png" alt="merge, top view"/> <img src="img/merge.xz.png" alt="merge, side view"/></p>
+
+<h2>Tests</h2>
+
+<pre>
+$ python3 -m pip install pytest
+$ python3 -m pytest
+</pre>
 
 <h2>Similar programs</h2>
 

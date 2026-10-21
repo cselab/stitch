@@ -245,3 +245,14 @@ def test_full_pipeline_stitched_image_with_wobble():
         match += np.sum(ok[filled])
         total += filled.sum()
     assert match == total, match / total
+
+
+def test_parallel_stitch_equals_serial(tmp_path):
+    wob = {(0, 1): sine(-3, 2, 7, 11), (1, 1): sine(3, 3, 8, 10)}
+    tiles, nominal, truth, wobs, pairs, tp, _ = setup(2, 2, ERR, wob=wob)
+    rigid, wobble, wst = run(tiles, nominal, pairs, tp, wobble_smooth=3, ms=14)
+    a = stitched(rigid, wobble, wst)
+    sink = np.memmap(tmp_path / "out.raw", "<u2", "w+", 0, a.shape, order="F")
+    glb.SINK[:] = [sink]
+    stw.stitch(K, rigid, wobble, wst, processes=3, verbose=False)
+    assert np.array_equal(a, sink)

@@ -20,7 +20,7 @@ static const char *me = "gen";
 static void int16_to_little(uint16_t, unsigned char *, unsigned char *);
 static void usg(void) {
   fprintf(stderr,
-          "%s -p 1|2 -n int int int -o int int [-d directory] [-w float]\n",
+          "%s -p 1|2|3 -n int int int -o int int [-d directory] [-w float]\n",
           me);
   exit(2);
 }
@@ -63,15 +63,67 @@ static uint16_t pattern2(double x, double y, double z) {
   return 0;
 }
 
+static double rnd(unsigned long *seed) {
+  *seed = *seed * 6364136223846793005UL + 1442695040888963407UL;
+  return (*seed >> 11) / 9007199254740992.0;
+}
+
+static uint16_t pattern3(double x, double y, double z) {
+  enum { N = 300 };
+  static double c[N][7];
+  static int init = 0;
+  unsigned long seed;
+  int i;
+  double d;
+  double n;
+  double rsq;
+  double s;
+  double t;
+  double u;
+  double v;
+  double w;
+
+  if (!init) {
+    seed = 12345;
+    for (i = 0; i < N; i++) {
+      c[i][0] = rnd(&seed);
+      c[i][1] = rnd(&seed);
+      c[i][2] = rnd(&seed);
+      u = 2 * rnd(&seed) - 1;
+      v = 2 * rnd(&seed) - 1;
+      w = 2 * rnd(&seed) - 1;
+      n = sqrt(u * u + v * v + w * w);
+      c[i][3] = u / n;
+      c[i][4] = v / n;
+      c[i][5] = w / n;
+      c[i][6] = 0.002 + 0.004 * rnd(&seed);
+    }
+    init = 1;
+  }
+  s = 0;
+  for (i = 0; i < N; i++) {
+    u = x - c[i][0];
+    v = y - c[i][1];
+    w = z - c[i][2];
+    t = u * c[i][3] + v * c[i][4] + w * c[i][5];
+    rsq = u * u + v * v + w * w - t * t;
+    d = c[i][6];
+    if (rsq < 9 * d * d)
+      s += exp(-rsq / (2 * d * d));
+  }
+  return s > 1 ? 1000 : 1000 * s;
+}
+
 static int tx = sizeof shift / sizeof shift[0];
 static int ty = sizeof shift[0] / sizeof shift[0][0];
 
 static const struct {
   const char *pattern;
   uint16_t (*function)(double, double, double);
-} Pattern[2] = {
+} Pattern[3] = {
     {"1", pattern1},
     {"2", pattern2},
+    {"3", pattern3},
 };
 
 int main(int argc, char **argv) {
@@ -230,8 +282,8 @@ int main(int argc, char **argv) {
         exit(2);
       }
       for (k = 0; k < nz; k++) {
-        wx = w * sin(4 * PI / nz * k);
-        wy = w * cos(4 * PI / nz * k);
+        wx = w * (x + y) / 2 * sin(4 * PI / nz * k + PI / 2 * (2 * x + y));
+        wy = w * (x + y) / 2 * cos(4 * PI / nz * k + PI / 2 * (2 * x + y));
         for (j = 0; j < ny; j++)
           for (i = 0; i < nx; i++) {
             ix = i + x * (nx - overlap[X]) - overlap[X] - shift[x][y][X] + wx;
