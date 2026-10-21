@@ -376,7 +376,16 @@ def place1(shape, positions, positions_new, components, smooth, processes,
                                                     components,
                                                     processes=processes,
                                                     verbose=verbose)
-    positions_optimized = positions_optimized.swapaxes(0, 1)
+    positions_optimized = positions_optimized.swapaxes(0, 1).astype(float)
+    rigid_guess = positions_optimized.copy()
+    # outside a tile's own slices, and on its isolated slices, the position is only the rigid
+    # guess: keep it out of the smoothing, or it drags the tile's end slices towards it
+    for i, po in enumerate(positions_optimized):
+        start = positions[i][2]
+        stop = start + shape[2]
+        po[:start] = np.nan
+        po[stop:] = np.nan
+        po[start:stop][status[i] == S_ISOLATED] = np.nan
     if smooth:
         for p in positions_optimized:
             valids = np.all(np.isfinite(p), axis=1)
@@ -386,12 +395,23 @@ def place1(shape, positions, positions_new, components, smooth, processes,
         np.min(np.min(positions_optimized_valid, axis=0), axis=0))
     positions_optimized -= min_pos
     for i in range(n_sources):
-        po = positions_optimized[i]
         start = positions[i][2]
         stop = start + shape[2]
-        finite = np.all(np.isfinite(po[start:stop]), axis=1)
-        wobble[i][finite] = po[start:stop][finite]
-        status[i][np.logical_not(finite)] = S_INVALID
+        po = positions_optimized[i][start:stop]
+        finite = np.all(np.isfinite(po), axis=1)
+        if not finite.any():        # never aligned to a neighbour: keep the rigid position
+            po = rigid_guess[i][start:stop] - min_pos
+            finite = np.all(np.isfinite(po), axis=1)
+        if finite.any():
+            # isolated slices take the position of the nearest aligned slices, so their image
+            # data is stitched rather than dropped
+            z = np.arange(len(po))
+            for d in range(po.shape[1]):
+                po[~finite, d] = np.interp(z[~finite], z[finite], po[finite, d])
+            wobble[i][:] = np.round(po)
+            status[i][:] = S_VALID
+        else:
+            status[i][:] = S_INVALID
     return wobble, status
 
 

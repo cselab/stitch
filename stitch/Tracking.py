@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import scipy.optimize
 import os
 import sys
 
@@ -11,8 +12,6 @@ def cdist(a, b, cutoff):
     dist.fill(np.inf)
     xlo, ylo = np.min(b, axis=0)
     xhi, yhi = np.max(b, axis=0)
-    cx = math.ceil((xhi - xlo) / cutoff)
-    cy = math.ceil((yhi - ylo) / cutoff)
     D = {}
     for i, (x, y) in enumerate(b):
         u = math.floor((x - xlo) / cutoff)
@@ -79,39 +78,16 @@ def track_positions(positions, new_trajectory_cost, cutoff, verbose):
 
 
 def match(cost):
+    """optimal assignment of old points (rows) to new points (columns); the last row and
+    column of cost are the 'trajectory ends' and 'trajectory starts' slots. Returns
+    {old: new}, new == number of new points for a trajectory that ends."""
     osize = cost.shape[0] - 1
     nsize = cost.shape[1] - 1
-    A = np.zeros((osize + 1, nsize + 1), dtype=bool)
-    for i in range(osize):
-        srtidx = np.argsort(cost[i, :])
-        dumidx = np.where(srtidx == nsize)[0]
-        iidx = 0
-        while np.sum(A[:, srtidx[iidx]]) != 0 and iidx < dumidx:
-            iidx = iidx + 1
-        A[i, srtidx[iidx]] = True
-    s = np.sum(A, axis=0)
-    A[osize, s < 1] = True
-    A[osize, nsize] = True
-    Cs = np.where(cost[:-1, :-1].flatten() < np.inf)
-    while True:
-        todo = np.intersect1d(
-            np.where(np.logical_not(A[:osize, :nsize].flatten()))[0], Cs)
-        if len(todo) == 0:
-            break
-        iCand, jCand = np.unravel_index(todo, (osize, nsize))
-        yCand = [np.where(A[ic, :])[0][0] for ic in iCand]
-        xCand = [np.where(A[:, jc])[0][0] for jc in jCand]
-        cRed = [
-            cost[i, j] + cost[x, y] - cost[i, y] - cost[x, j]
-            for i, j, x, y in zip(iCand, jCand, xCand, yCand)
-        ]
-        rMin = np.argmin(cRed)
-        rCost = cRed[rMin]
-        if rCost < -1e-10:
-            A[iCand[rMin], jCand[rMin]] = 1
-            A[xCand[rMin], jCand[rMin]] = 0
-            A[iCand[rMin], yCand[rMin]] = 0
-            A[xCand[rMin], yCand[rMin]] = 1
-        else:
-            break
-    return {i: j for i, j in zip(*np.where(A[:-1, :]))}
+    big = 1e9 + np.nanmax(np.where(np.isfinite(cost), cost, 0)) * (osize + nsize + 1)
+    # square problem: old -> new or old -> its own 'end'; new <- old or new <- its own 'start'
+    c = np.zeros((osize + nsize, nsize + osize))
+    c[:osize, :nsize] = np.where(np.isfinite(cost[:-1, :-1]), cost[:-1, :-1], big)
+    c[:osize, nsize:] = np.where(np.eye(osize, dtype=bool), cost[:-1, nsize][:, None], big)
+    c[osize:, :nsize] = np.where(np.eye(nsize, dtype=bool), cost[osize, :-1][None, :], big)
+    rows, cols = scipy.optimize.linear_sum_assignment(c)
+    return {i: (j if j < nsize else nsize) for i, j in zip(rows, cols) if i < osize}
