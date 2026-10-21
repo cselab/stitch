@@ -1,4 +1,3 @@
-import numpy as np
 
 MM = []
 XX = []

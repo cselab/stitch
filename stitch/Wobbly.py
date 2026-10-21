@@ -18,8 +18,6 @@ class Layout1:
         self.sources = sources
         self.lower = tuple(np.min([s.position for s in sources], axis=0))
         self.upper = tuple(np.max([s.upper for s in sources], axis=0))
-        self.origin = tuple(p if p >= 0 else 0 for p in self.lower)
-        self.shape = tuple(u - o for u, o in zip(self.upper, self.origin))
 
 
 class Slice0:
@@ -163,12 +161,12 @@ def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare,
 
     w1 = np.zeros((sx, sy))
     w1[np1x, np1y] = 1
-    w1fft = np.fft.fftn(w1)
+    w1fft = np.fft.rfft2(w1)
 
     w2 = np.zeros((sx, sy))
     w2[np2x, np2y] = 1
-    w2fft = np.fft.fftn(w2)
-    nrm = np.fft.ifftn(w1fft * np.conj(w2fft))
+    w2fft = np.fft.rfft2(w2)
+    nrm = np.fft.irfft2(w1fft * np.conj(w2fft), s=(sx, sy))
     nrm = np.abs(nrm[roilx:roiux, roily:roiuy])
     eps = 2.2204e-16
     nrm[nrm < eps] = eps
@@ -184,13 +182,13 @@ def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare,
             i2a = i2[:, :, a - start]
         i1a = np.pad(i1a, (pad1x, pad1y), 'constant')
         i2a = np.pad(i2a, (pad2x, pad2y), 'constant')
-        i1fft = np.fft.fftn(i1a)
-        i2fft = np.fft.fftn(i2a)
-        s1fft = np.fft.fftn(i1a * i1a)
-        s2fft = np.fft.fftn(i2a * i2a)
+        i1fft = np.fft.rfft2(i1a)
+        i2fft = np.fft.rfft2(i2a)
+        s1fft = np.fft.rfft2(i1a * i1a)
+        s2fft = np.fft.rfft2(i2a * i2a)
         wssd = w1fft * np.conj(s2fft) + s1fft * np.conj(
             w2fft) - 2 * i1fft * np.conj(i2fft)
-        wssd = np.fft.ifftn(wssd)
+        wssd = np.fft.irfft2(wssd, s=(sx, sy))
         wssd = wssd[roilx:roiux, roily:roiuy]
         errors[a - start] = np.abs(wssd / nrm)
         status[a - start] = MEASURED
@@ -690,118 +688,39 @@ def stitch(shape0, positions, wobble, status, processes, verbose):
             e.starmap(stitch_slice, (sl + args for sl in slices))
 
 
-def _split_region(r, o):
-    split = [o]
-    rlx, rly, rux, ruy = *r.lower, *r.upper
-    olx, oly, oux, ouy = *o.lower, *o.upper
-    if rlx < olx:
-        split.append(glb.Overlap3(rlx, rly, olx, ruy))
-    if oux < rux:
-        split.append(glb.Overlap3(oux, rly, rux, ruy))
-    if rly < oly:
-        split.append(glb.Overlap3(olx, rly, oux, oly))
-    if ouy < ruy:
-        split.append(glb.Overlap3(olx, ouy, oux, ruy))
-    return split
-
-
-def _add_overlap_region(regions, region):
-    regsadd = [region]
-    regscheck = regions
-    regsnew = []
-    while len(regscheck) > 0 and len(regsadd) > 0:
-        rc = regscheck[0]
-        found = False
-        for a in range(len(regsadd)):
-            ra = regsadd[a]
-            ovl = np.max([rc.lower, ra.lower], axis=0)
-            ovu = np.min([rc.upper, ra.upper], axis=0)
-            if np.all(ovu - ovl - 1 >= 0):
-                ov = glb.Overlap2(*ovl, *ovu)
-                split = _split_region(rc, ov)
-                for s in split:
-                    s.sources = rc.sources
-                sources = split[0].sources
-                sources += tuple(s for s in ra.sources if s not in sources)
-                split[0].sources = sources
-                regsnew.append(split[0])
-                regscheck = split[1:] + regscheck[1:]
-                split = _split_region(ra, ov)[1:]
-                for s in split:
-                    s.sources = ra.sources
-                regsadd = regsadd[:a] + split + regsadd[a + 1:]
-                found = True
-                break
-        if not found:
-            regsnew.append(rc)
-            regscheck = regscheck[1:]
-    regsnew = regsnew + regscheck + regsadd
-    return regsnew
+def _clip(lo, up, xl, yl, xu, yu):
+    return max(lo[0], xl), max(lo[1], yl), min(up[0], xu), min(up[1], yu)
 
 
 def stitch_slice(slice_id, layout, shape0, n_slices, ox, oy, sx, sy, verbose):
     if verbose and slice_id % max(1, n_slices // 100) == 0:
         sys.stderr.write('Stitching [%d] slice %d / %d\n' %
                          (os.getpid(), slice_id, n_slices))
-    axl, ayl = layout.origin
-    axu, ayu = layout.upper
-    bxu, byu = ox + sx, oy + sy
-    xl = max(axl, ox)
-    yl = max(ayl, oy)
-    xu = min(axu, bxu)
-    yu = min(ayu, byu)
-    sxl, sxu = xl - axl, xu - axl
-    syl, syu = yl - ayl, yu - ayl
-    fxl, fxu = xl - ox, xu - ox
-    fyl, fyu = yl - oy, yu - oy
-    if xu - xl - 1 < 0 or yu - yl - 1 < 0:
-        return
-
-    regions = []
+    sink = glb.SINK[0][:, :, slice_id]
+    boxes = []
     for s in layout.sources:
-        region = glb.Overlap1(lower=s.position,
-                              shape=(shape0[0], shape0[1]),
-                              sources=(s, ))
-        regions = _add_overlap_region(regions, region)
-    shape = tuple(max(s, 0) for s in layout.shape)
-    new_regions = []
-    for r in regions:
-        r.lower = tuple(p if l < p else l for l, p in zip(r.lower, (axl, ayl)))
-        r.upper = tuple(p if u < p else u for u, p in zip(r.upper, (axl, ayl)))
-        if np.all([u > l for u, l in zip(r.upper, r.lower)]):
-            new_regions.append(r)
-    regions = new_regions
-    new_regions = []
-    ps = np.array((axl, ayl), dtype=int) + shape
-    for r in regions:
-        r.lower = tuple(p if l > p else l for l, p in zip(r.lower, ps))
-        r.upper = tuple(p if u > p else u for u, p in zip(r.upper, ps))
-        if np.all([u > l for u, l in zip(r.upper, r.lower)]):
-            new_regions.append(r)
-    regions = new_regions
-
-    stitched = np.zeros(shape, dtype='<u2', order='F')
+        px, py = s.position
+        lx, ly, ux, uy = _clip(s.position, s.upper, ox, oy, ox + sx, oy + sy)
+        if ux > lx and uy > ly:
+            sink[lx - ox:ux - ox, ly - oy:uy - oy] = s[lx - px:ux - px, ly - py:uy - py]
+            boxes.append((s, (lx, ly, ux, uy)))
     w = stitch_weights(shape0[0], shape0[1])
-    for r in regions:
-        rxl, ryl = r.lower
-        rxu, ryu = r.upper
-        nsources = len(r.sources)
-        if nsources > 1:
-            rd = np.zeros((nsources, rxu - rxl, ryu - ryl))
-            wd = np.zeros((nsources, rxu - rxl, ryu - ryl))
-            for i, s in enumerate(r.sources):
+    for i, (_, bi) in enumerate(boxes):
+        for _, bj in boxes[i + 1:]:
+            xl, yl, xu, yu = _clip(bi[:2], bi[2:], *bj)
+            if xu <= xl or yu <= yl:
+                continue
+            acc = np.zeros((xu - xl, yu - yl))
+            wsum = np.zeros((xu - xl, yu - yl))
+            for s, _ in boxes:
                 px, py = s.position
-                rd[i] = s[rxl - px:rxu - px, ryl - py:ryu - py]
-                wd[i] = w[rxl - px:rxu - px, ryl - py:ryu - py]
-            rd = np.average(rd, axis=0, weights=wd)
-        else:
-            s = r.sources[0]
-            px, py = s.position
-            rd = s[rxl - px:rxu - px, ryl - py:ryu - py]
-        stitched[rxl - axl:rxu - axl, ryl - ayl:ryu - ayl] = rd
-
-    np.copyto(glb.SINK[0][fxl:fxu, fyl:fyu, slice_id], stitched[sxl:sxu,
-                                                                syl:syu], 'no')
+                lx, ly, ux, uy = _clip(s.position, s.upper, xl, yl, xu, yu)
+                if ux <= lx or uy <= ly:
+                    continue
+                ws = w[lx - px:ux - px, ly - py:uy - py]
+                acc[lx - xl:ux - xl, ly - yl:uy - yl] += ws * s[lx - px:ux - px, ly - py:uy - py]
+                wsum[lx - xl:ux - xl, ly - yl:uy - yl] += ws
+            sink[xl - ox:xu - ox, yl - oy:yu - oy] = np.rint(acc / wsum)
 
 
 @functools.lru_cache(maxsize=None)

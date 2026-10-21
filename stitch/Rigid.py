@@ -3,7 +3,6 @@ import numpy as np
 import os
 import sys
 import stitch.glb as glb
-import stitch.union_find
 
 
 def padding0(s1, p2, s2, minx, maxx):
