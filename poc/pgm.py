@@ -15,6 +15,5 @@ def pgm(path, a):
         buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_WRITE)
     b = np.ndarray((nx, ny), dtype, buffer, offset=offset, order='F')
     lo, hi = np.percentile(a, (10, 90))
-    # clip in float: numpy 2 will not cast float limits into the uint16 output
     c = np.clip(np.asarray(a, dtype=float), lo, hi)
     b[:] = (c - lo) / (hi - lo) * M if hi - lo > 0 else c

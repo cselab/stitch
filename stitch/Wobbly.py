@@ -281,7 +281,6 @@ def shifts_from_tracing(errors,
             lens = np.array([len(t) for t in trajectories])
             iopt = np.where(lens == np.max(lens))[0]
             if len(iopt) > 1:
-                # t[0] counts measured slices within this run: map it back to a slice
                 q = [
                     np.sum([
                         errors[s + measured_se[t[0]]][tuple(positions[t[0]][t[1]])]
@@ -336,7 +335,7 @@ def place0(shape, pairs, positions, displacements, qualities, status, smooth,
         u = min(positions[i][2] + shape[2], positions[j][2] + shape[2])
         if smooth:
             valids = s >= VALID
-            if min_quality is not None:     # a threshold of 0 is a threshold too
+            if min_quality is not None:
                 valids = np.logical_and(valids, q > min_quality)
             s_displacements[l:u, k] = smooth_displacements(d, valids, **smooth)
         else:
@@ -380,8 +379,6 @@ def place1(shape, positions, positions_new, components, smooth, processes,
                                                     verbose=verbose)
     positions_optimized = positions_optimized.swapaxes(0, 1).astype(float)
     rigid_guess = positions_optimized.copy()
-    # outside a tile's own slices, and on its isolated slices, the position is only the rigid
-    # guess: keep it out of the smoothing, or it drags the tile's end slices towards it
     for i, po in enumerate(positions_optimized):
         start = positions[i][2]
         stop = start + shape[2]
@@ -401,12 +398,10 @@ def place1(shape, positions, positions_new, components, smooth, processes,
         stop = start + shape[2]
         po = positions_optimized[i][start:stop]
         finite = np.all(np.isfinite(po), axis=1)
-        if not finite.any():        # never aligned to a neighbour: keep the rigid position
+        if not finite.any():
             po = rigid_guess[i][start:stop] - min_pos
             finite = np.all(np.isfinite(po), axis=1)
         if finite.any():
-            # isolated slices take the position of the nearest aligned slices, so their image
-            # data is stitched rather than dropped
             z = np.arange(len(po))
             for d in range(po.shape[1]):
                 po[~finite, d] = np.interp(z[~finite], z[finite], po[finite, d])
@@ -539,8 +534,6 @@ def _optimize_slice_positions(positions, components, processes, verbose):
             d_to_si[d] = (s, i)
 
         s0, i0 = c_to_si(cluster_component[0])
-        # each cluster is tied only to clusters in the slices above and below: the matrix is
-        # sparse, and the same for every dimension (only the right-hand sides X differ)
         X = np.zeros((n_s, ndim))
         rows, cols, vals = [], [], []
         for ci, c in enumerate(cluster_component[1:]):
@@ -579,7 +572,6 @@ def _optimize_slice_positions(positions, components, processes, verbose):
             sys.stderr.write(
                 'Placement: done constructing constraints for component %d/%d\n'
                 % (cci, n_components))
-        # duplicate (row, col) entries are summed, as the dense += did
         M = scipy.sparse.csc_matrix((vals, (rows, cols)), shape=(n_s, n_s))
         shifts = _solve(-M, X)
         shifts = np.asarray(np.round(shifts), dtype=int)
@@ -597,13 +589,11 @@ def _optimize_slice_positions(positions, components, processes, verbose):
 
 
 def _solve(A, b):
-    """A x = b for every column of b: a sparse LU when A is regular (one cluster of each
-    component is fixed, so it normally is), least squares otherwise"""
     if A.shape[0] == 0:
         return np.zeros(b.shape)
     try:
         return scipy.sparse.linalg.splu(A).solve(b)
-    except RuntimeError:            # singular: fall back to the least-squares solution
+    except RuntimeError:
         return np.stack([scipy.sparse.linalg.lsqr(A, b[:, e])[0] for e in range(b.shape[1])],
                         axis=1)
 

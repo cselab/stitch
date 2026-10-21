@@ -114,7 +114,6 @@ double corr(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx0, uint64_t sy0,
             sy1, sz1);
   }
   s_xx = s_xy = s_yy = s_x = s_y = 0;
-  /* one reduction per sum: atomics on every voxel serialize the threads */
 #pragma omp parallel for reduction(+ : s_xx, s_yy, s_xy, s_x, s_y)
   for (uint64_t k = 0; k < nz; k++) {
     if (Verbose)
@@ -124,7 +123,6 @@ double corr(uint64_t nx, uint64_t ny, uint64_t nz, uint64_t sx0, uint64_t sy0,
       const uint8_t *a0 = a + k * sz0 + j * sy0;
       const uint8_t *b0 = b + k * sz1 + j * sy1;
       for (uint64_t i = 0; i < nx; i++) {
-        /* 64-bit products: uint16 * uint16 promotes to int and overflows */
         type_sum x;
         type_sum y;
         x = *(type *)(a0 + i * sx0);

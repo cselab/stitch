@@ -17,7 +17,6 @@ def test_union_find_components():
 
 
 def test_union_find_long_chain():
-    # a 3000-tile chain: find() must not exceed the recursion limit
     n = 3000
     g = uf.union_find(n)
     for i in range(1, n):
@@ -27,8 +26,6 @@ def test_union_find_long_chain():
 
 @pytest.mark.parametrize("seed", range(20))
 def test_match_is_optimal(seed):
-    # Tracking.match solves a rectangular assignment with an "end/start trajectory"
-    # option at new_cost; compare its total cost with scipy's optimum
     rng = np.random.default_rng(seed)
     m, n = rng.integers(1, 7, size=2)
     cost = rng.random((m, n)) * 10
@@ -36,13 +33,11 @@ def test_match_is_optimal(seed):
     new = 4.0
     padded = np.pad(cost, [(0, 1), (0, 1)], "constant", constant_values=new)
     got = trk.match(padded)
-    # every old point gets exactly one target (a new point or the 'end' slot n)
     assert sorted(got) == list(range(m))
     used = [j for j in got.values() if j < n]
     assert len(used) == len(set(used))
     total = sum(padded[i, j] for i, j in got.items())
-    total += new * (n - len(used))                      # unmatched new points start trajectories
-    # reference: the same problem as a square assignment
+    total += new * (n - len(used))
     big = np.full((m + n, n + m), 0.0)
     big[:m, :n] = np.where(np.isfinite(cost), cost, 1e9)
     big[:m, n:] = np.where(np.eye(m), new, 1e9)

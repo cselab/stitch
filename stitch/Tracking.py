@@ -78,13 +78,9 @@ def track_positions(positions, new_trajectory_cost, cutoff, verbose):
 
 
 def match(cost):
-    """optimal assignment of old points (rows) to new points (columns); the last row and
-    column of cost are the 'trajectory ends' and 'trajectory starts' slots. Returns
-    {old: new}, new == number of new points for a trajectory that ends."""
     osize = cost.shape[0] - 1
     nsize = cost.shape[1] - 1
     big = 1e9 + np.nanmax(np.where(np.isfinite(cost), cost, 0)) * (osize + nsize + 1)
-    # square problem: old -> new or old -> its own 'end'; new <- old or new <- its own 'start'
     c = np.zeros((osize + nsize, nsize + osize))
     c[:osize, :nsize] = np.where(np.isfinite(cost[:-1, :-1]), cost[:-1, :-1], big)
     c[:osize, nsize:] = np.where(np.eye(osize, dtype=bool), cost[:-1, nsize][:, None], big)

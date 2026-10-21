@@ -1,4 +1,3 @@
-"""End-to-end ground truth: tiles cut at known positions from one volume."""
 import numpy as np
 import pytest
 
@@ -8,8 +7,8 @@ import stitch.Wobbly as stw
 
 from synth import cut, grid, world
 
-K = (120, 110, 40)          # tile, deliberately not cubic
-STEP = (100, 92)            # nominal grid step: 20 and 18 px overlap
+K = (120, 110, 40)
+STEP = (100, 92)
 
 
 def run(tiles, nominal, pairs, tile_pos, processes="serial", wobble_smooth=6):
@@ -33,7 +32,6 @@ def run(tiles, nominal, pairs, tile_pos, processes="serial", wobble_smooth=6):
 
 
 def errors(rigid, wobble, truth, wob_true):
-    """per tile, per slice: |recovered - true| xy position relative to tile 0"""
     out = {}
     for i in range(1, len(truth)):
         e = []
@@ -113,7 +111,6 @@ def test_parallel_equals_serial():
 
 
 def test_stitch_reproduces_world():
-    # tiles at their true positions, no wobble: the stitched volume must equal the world
     tiles, nominal, truth, wobs, pairs, tp, vol = setup(2, 2, {})
     glb.SRC[:] = tiles
     lo = np.min(truth, axis=0)
@@ -130,7 +127,6 @@ def test_stitch_reproduces_world():
 
 
 def test_blank_slices_do_not_corrupt_neighbours():
-    # the last third of every tile is empty background (e.g. past the end of the sample)
     tiles, nominal, truth, wobs, pairs, tp, _ = setup(2, 2, ERR)
     for t in tiles:
         t[:, :, 2 * K[2] // 3:] = 100
@@ -142,8 +138,6 @@ def test_blank_slices_do_not_corrupt_neighbours():
 
 
 def test_isolated_slices_are_stitched():
-    # with z offsets between tiles, the stack's end slices of some tiles have no overlapping
-    # neighbour; their image data must still reach the output
     tiles, nominal, truth, wobs, pairs, tp, vol = setup(2, 2, ERR)
     rigid, wobble, wst = run(tiles, nominal, pairs, tp)
     skipped = [(i, kz) for i, s in enumerate(wst) for kz in range(K[2]) if s[kz] != stw.S_VALID]

@@ -126,7 +126,6 @@ def align(shape, pairs, positions, tile_position, depth, max_shifts, clip,
           processes, verbose):
     def a2arg(i, j):
         axis = 1 if tile_position[i][0] == tile_position[j][0] else 0
-        # where tile j starts relative to tile i, as padding0 (and Wobbly) expect
         shift = (positions[j][0] - positions[i][0],
                  positions[j][1] - positions[i][1],
                  positions[j][2] - positions[i][2])

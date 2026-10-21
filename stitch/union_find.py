@@ -4,7 +4,6 @@ import ctypes
 class union_find:
     def __init__(self, n):
         self.n = n
-        # 64-bit labels: a long stack has more (slice, cluster) nodes than 16 bits hold
         self.root = (ctypes.c_uint64 * self.n)()
         self.root[:] = range(self.n)
 
@@ -15,7 +14,6 @@ class union_find:
             self.root[b] = a
 
     def find(self, a):
-        # iterative: a chain of thousands of slices would overflow the recursion limit
         r = a
         while self.root[r] != r:
             r = self.root[r]
