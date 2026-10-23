@@ -107,6 +107,7 @@ def align_pair(src1, src2, shift, axis, shape, depth, max_shifts, clip,
     eps = 2.2204e-16
     nrm[nrm <= eps] = eps
     cc = np.abs(wssd / nrm)
+    cc[np.abs(nrm) < np.abs(nrm).max() / 4] = np.inf
     shift = np.argmin(cc)
     shift = np.unravel_index(shift, cc.shape)
     quality = -(cc[tuple(shift)])

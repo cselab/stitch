@@ -168,6 +168,7 @@ def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare,
     w2fft = np.fft.rfft2(w2)
     nrm = np.fft.irfft2(w1fft * np.conj(w2fft), s=(sx, sy))
     nrm = np.abs(nrm[roilx:roiux, roily:roiuy])
+    small = nrm < nrm.max() / 4
     eps = 2.2204e-16
     nrm[nrm < eps] = eps
     for a in range(start, stop):
@@ -190,7 +191,9 @@ def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare,
             w2fft) - 2 * i1fft * np.conj(i2fft)
         wssd = np.fft.irfft2(wssd, s=(sx, sy))
         wssd = wssd[roilx:roiux, roily:roiuy]
-        errors[a - start] = np.abs(wssd / nrm)
+        e = np.abs(wssd / nrm)
+        e[small] = e[~small].max()
+        errors[a - start] = e
         status[a - start] = MEASURED
     shifts, qualities, status = shifts_from_tracing(errors, status, verbose,
                                                     **find_shifts)

@@ -40,13 +40,38 @@ stitch
 <pre>
 $ python3 main.py
 main.py: processes = 4
-387x387x203le.raw
-387x387.pgm
+386x388x203le.raw
+386x388.pgm
 </pre>
 
-Open <tt>387x387x203le.raw</tt> in ImageJ.
+Open <tt>386x388x203le.raw</tt> in ImageJ.
 
 <p align="center"><img src="img/sample.png" alt="sample output"/></p>
+
+<h2>Options</h2>
+
+<pre>
+$ python3 main.py -h
+usage: main.py [-h] [-n X Y Z] [-t X Y] [-o X Y] [-s X Y Z] [-m M] [-w A B]
+               [-p P] [-v]
+               [path ...]
+
+stitch a grid of raw tiles
+
+positional arguments:
+  path      tiles in x-major order, default: output of tool/gen
+
+options:
+  -h        show this help message and exit
+  -n X Y Z  tile size (default: 200 200 200)
+  -t X Y    number of tiles (default: 2 2)
+  -o X Y    overlap (default: 15 15)
+  -s X Y Z  stride (default: 1 1 1)
+  -m M      maximum shift (default: 20)
+  -w A B    smoothing windows of shifts and wobble (default: 100 20)
+  -p P      number of processes (default: 4)
+  -v        verbose
+</pre>
 
 <h2>Wobbly example</h2>
 
@@ -54,6 +79,7 @@ Generate four tiles with vessels and a 30 pixel overlap. Every tile
 except the first wobbles in x and y along z.
 <pre>
 $ tool/gen -p 3 -n 200 200 200 -o 30 30 -w 6
+$ python3 main.py -o 30 30 -m 12 -w 10 6
 $ python3 img.py
 img.py: img/wobble.xy.png img/merge.xy.png
 img.py: img/wobble.xz.png img/merge.xz.png
