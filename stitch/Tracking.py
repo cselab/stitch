@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import scipy.optimize
+import scipy.spatial
 import os
 import sys
 
@@ -45,7 +46,10 @@ def track_positions(positions, new_trajectory_cost, cutoff, verbose):
                 'Wobbly [%d] tracking: %d / %d: patterns: %d %d\n' %
                 (os.getpid(), i, n_steps, len(
                     positions[i]), len(positions[i + 1])))
-        cost = cdist(positions[i], positions[i + 1], cutoff)
+        if cutoff is None:
+            cost = scipy.spatial.distance.cdist(positions[i], positions[i + 1])
+        else:
+            cost = cdist(positions[i], positions[i + 1], cutoff)
         if new_trajectory_cost is None:
             new_trajectory_cost = np.max(cost) + 1.0
         cost = np.pad(cost, [(0, 1), (0, 1)],

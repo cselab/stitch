@@ -48,7 +48,7 @@ S_VALID = 0
 
 def fix_unaligned(status, displacements, qualities):
     n_status = len(status)
-    unaligned = np.array(status == UNALIGNED, dtype=int)
+    unaligned = np.array(np.isin(status, (UNALIGNED, NOSIGNAL)), dtype=int)
     unaligned = np.pad(unaligned, (1, 1), 'constant')
     delta = np.diff(unaligned)
     starts = np.where(delta > 0)[0]
@@ -138,6 +138,7 @@ def align_pair(source1, p1, source2, p2, shape, max_shifts, prepare,
     z2 = p2[2]
 
     (mlx, mux), (mly, muy) = max_shifts
+    mlx, mux, mly, muy = mlx - 1, mux + 1, mly - 1, muy + 1
 
     start = max(z1, z2)
     stop = min(z1 + shape[2], z2 + shape[2])
@@ -234,10 +235,16 @@ def shifts_from_tracing(errors,
                         verbose,
                         new_trajectory_cost=None,
                         cutoff=None,
-                        min_distance=1):
+                        min_distance=1,
+                        min_contrast=0.25):
     n = len(status)
     qualities = -np.inf * np.ones(n)
     shifts = np.zeros((n, 2), dtype=int)
+    for i in np.where(status == MEASURED)[0]:
+        lo = errors[i].min()
+        mid = np.median(errors[i])
+        if not mid > 0 or (mid - lo) / mid < min_contrast:
+            status[i] = NOSIGNAL
     measured = np.where(status == MEASURED)[0]
     if len(measured) == 0:
         return shifts, qualities, status
@@ -317,6 +324,8 @@ def shifts_from_tracing(errors,
 
 def place0(shape, pairs, positions, displacements, qualities, status, smooth,
            min_quality, processes, verbose):
+    if min_quality is None:
+        min_quality = -np.inf
     lo = min(p[2] for p in positions)
     hi = max(p[2] + shape[2] for i, p in enumerate(positions))
     n_slices = hi - lo
@@ -336,8 +345,7 @@ def place0(shape, pairs, positions, displacements, qualities, status, smooth,
         u = min(positions[i][2] + shape[2], positions[j][2] + shape[2])
         if smooth:
             valids = s >= VALID
-            if min_quality is not None:
-                valids = np.logical_and(valids, q > min_quality)
+            valids = np.logical_and(valids, q > min_quality)
             s_displacements[l:u, k] = smooth_displacements(d, valids, **smooth)
         else:
             s_displacements[l:u, k] = d
@@ -629,6 +637,8 @@ def smooth_window(x, window_length=10, window='bartlett', binary=None):
             w = np.ones(window_length)
         else:
             w = getattr(np, window)(window_length)
+        if not w.sum() > 0:
+            w = np.ones(1)
         w /= w.sum()
 
         x = np.pad(x, (window_length, window_length), 'edge')

@@ -82,3 +82,9 @@ def test_rigid_place_exact(shift):
 def test_stitch_weights_symmetric_positive():
     w = stw.stitch_weights(7, 5)
     assert w.min() >= 1 and np.array_equal(w, w[::-1, ::-1])
+
+
+@pytest.mark.parametrize("n", [1, 2, 3])
+def test_smooth_window_tiny(n):
+    for w in ("hanning", "hamming", "bartlett", "blackman"):
+        assert np.all(stw.smooth_window(np.full(20, 4), window_length=n, window=w) == 4)

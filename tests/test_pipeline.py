@@ -256,3 +256,40 @@ def test_parallel_stitch_equals_serial(tmp_path):
     glb.SINK[:] = [sink]
     stw.stitch(K, rigid, wobble, wst, processes=3, verbose=False)
     assert np.array_equal(a, sink)
+
+
+def test_noise_slices_are_interpolated():
+    tiles, nominal, truth, wobs, pairs, tp, _ = setup(2, 2, ERR)
+    rng = np.random.default_rng(3)
+    band = slice(15, 25)
+    tiles[3][:, :, band] = rng.integers(0, 60000, tiles[3][:, :, band].shape)
+    rigid, wobble, wst = run(tiles, nominal, pairs, tp)
+    e = errors(rigid, wobble, truth, wobs)
+    assert e[3].max() <= 1, e[3]
+
+
+@pytest.mark.parametrize("sign", [-1, 1])
+def test_shift_at_max_shift(sign):
+    ms = 6
+    vol = world((260, 160, 60))
+    glb.SRC[:] = [cut(vol, (10, 10, 5), K), cut(vol, (110 + sign * ms, 10, 5), K)]
+    for cutoff in (3 * np.sqrt(2), None):
+        d, q, s = stw.align_pair(0, (0, 0, 0), 1, (100, 0, 0), K, ((-ms, ms), (-ms, ms)), True,
+                                 dict(cutoff=cutoff), False)
+        assert np.all(d == (sign * ms, 0)), d
+
+
+def test_none_defaults():
+    tiles, nominal, truth, wobs, pairs, tp, _ = setup(2, 2, ERR)
+    glb.SRC[:] = tiles
+    shifts, q = st.align(K, pairs, nominal, tp, depth=(20, 18, None),
+                         max_shifts=[(-8, 8), (-8, 8), (-5, 5)], clip=65535,
+                         processes="serial", verbose=False)
+    rigid = st.place(pairs, nominal, list(shifts))
+    d, qual, status = stw.align(K, pairs, rigid, max_shifts=((-8, 8), (-8, 8)), prepare=True,
+                                find_shifts=dict(), processes="serial", verbose=False)
+    newpos, comps = stw.place0(K, pairs, rigid, d, qual, status, smooth=None, min_quality=None,
+                               processes="serial", verbose=False)
+    wobble, wst = stw.place1(K, rigid, newpos, comps, smooth=None, processes="serial",
+                             verbose=False)
+    assert errors(rigid, wobble, truth, wobs)[3].max() <= 1

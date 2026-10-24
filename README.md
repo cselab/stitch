@@ -68,7 +68,7 @@ options:
   -o X Y    overlap (default: 15 15)
   -s X Y Z  stride (default: 1 1 1)
   -m M      maximum shift (default: 20)
-  -w A B    smoothing windows of shifts and wobble (default: 100 20)
+  -w A B    smoothing windows of shifts and wobble in slices (default: 10 6)
   -p P      number of processes (default: 4)
   -v        verbose
 </pre>
@@ -79,7 +79,7 @@ Generate four tiles with vessels and a 30 pixel overlap. Every tile
 except the first wobbles in x and y along z.
 <pre>
 $ tool/gen -p 3 -n 200 200 200 -o 30 30 -w 6
-$ python3 main.py -o 30 30 -m 12 -w 10 6
+$ python3 main.py -o 30 30 -m 12
 $ python3 img.py
 img.py: img/wobble.xy.png img/merge.xy.png
 img.py: img/wobble.xz.png img/merge.xz.png
